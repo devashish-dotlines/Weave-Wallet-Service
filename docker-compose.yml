@@ -1,0 +1,43 @@
+services:
+  # PostgreSQL Database Service
+  postgres-db:
+    image: postgres:16
+    container_name: wallet-postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: Nopass@1234
+      POSTGRES_DB: wallet_dev
+    ports:
+      - "5434:5432" # Host port 5434 : Container port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wallet-network
+
+  # Product Service API
+  wallet-api:
+    build: .
+    container_name: wallet-app
+    restart: always
+    ports:
+      - "9046:9046"
+    env_file:
+      - .env
+    volumes:
+      # Map current host folder to the specific WORKDIR path
+      - .:/usr/src/app
+      # Keep the container's node_modules separate from the host
+      - /usr/src/app/node_modules
+    depends_on:
+      - postgres-db
+    networks:
+      - wallet-network
+
+# Define the shared network (Replaces 'docker network create')
+networks:
+  wallet-network:
+    driver: bridge
+
+# Define the persistent storage (Replaces the manual volume)
+volumes:
+  postgres_data:

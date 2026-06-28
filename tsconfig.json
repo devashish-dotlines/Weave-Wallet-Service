@@ -1,0 +1,25 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
+    "typeRoots": ["./src/@types", "./node_modules/@types"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noUnusedLocals": false,
+    "sourceMap": true,
+    "declaration": false,
+    "pretty": true,
+    "strictNullChecks": true,
+    "skipLibCheck": true,
+    "strictPropertyInitialization": true,
+    "noUncheckedIndexedAccess": false,
+    "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables `allowSyntheticDefaultImports` for type compatibility. */,
+    "rootDir": "./src" /* Specify the root folder within your source files. */,
+    "outDir": "./build",
+    "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */ /* Specify an output folder for all emitted files. */,
+    "resolveJsonModule": true
+  }
+}

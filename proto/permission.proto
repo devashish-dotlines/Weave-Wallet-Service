@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package accounts.v1;
+
+// Inter-service RBAC resolution API of the Accounts service. Other services call
+// ResolvePermissions to turn a principal's Keycloak role NAMES into the
+// permission codes those roles grant (role -> role_permission -> permission.code,
+// the same mapping Accounts uses in-process). Calls are authenticated with the
+// caller's service API key supplied as `x-api-key` metadata (NOT the gateway JWT).
+// Keep this file byte-identical in every consumer of the service.
+
+service PermissionService {
+  rpc ResolvePermissions(ResolvePermissionsRequest) returns (ResolvePermissionsResponse);
+  // Translate opaque Accounts role ids (UUIDs) -> their Keycloak realm-role
+  // names. Callers that persist a role UUID (e.g. the Workflow Engine's
+  // transition rules) use this to match against the realm-role NAMES carried in
+  // a principal's gateway token. Unknown/voided ids are simply omitted.
+  rpc ResolveRoleNames(ResolveRoleNamesRequest) returns (ResolveRoleNamesResponse);
+}
+
+message ResolvePermissionsRequest {
+  repeated string role_names = 1;
+}
+
+message ResolvePermissionsResponse {
+  repeated string permission_codes = 1;
+}
+
+message ResolveRoleNamesRequest {
+  repeated string role_ids = 1;
+}
+
+message ResolveRoleNamesResponse {
+  repeated RoleNameMapping roles = 1;
+}
+
+message RoleNameMapping {
+  string id = 1;
+  string name = 2;
+}
