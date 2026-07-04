@@ -5,6 +5,12 @@ import * as Sequelize from 'sequelize';
 
 import { ServerVersion } from './serverVersion';
 import { APIKey } from './apiKey';
+import { BalanceType } from './Wallet/balanceType';
+import { Uom } from './Wallet/uom';
+import { OwnerType } from './Wallet/ownerType';
+import { WalletType } from './Wallet/walletType';
+import { Wallet } from './Wallet/wallet';
+import { WalletTransaction } from './Wallet/walletTransaction';
 
 let models: any = {};
 let modelsLoaded = false;
@@ -15,6 +21,12 @@ const createModels = () => {
 
   models['ServerVersion'] = ServerVersion;
   models['APIKey'] = APIKey;
+  models['BalanceType'] = BalanceType;
+  models['Uom'] = Uom;
+  models['OwnerType'] = OwnerType;
+  models['WalletType'] = WalletType;
+  models['Wallet'] = Wallet;
+  models['WalletTransaction'] = WalletTransaction;
 
   // Register new module models here, e.g.:
   // models['<ModelName>'] = <ModelName>;

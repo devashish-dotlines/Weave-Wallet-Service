@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package workflow.v1;
+
+// Inter-service module<->engine API of the workflow-engine. This service (the
+// Accounts module) is a CLIENT of it. Calls are authenticated with this
+// module's API key supplied as `x-api-key` metadata (NOT the gateway JWT).
+// Keep this file byte-identical to the engine's proto/workflow.proto.
+
+service WorkflowService {
+  rpc Initiate(InitiateRequest) returns (InitiateResponse);
+  rpc ExecuteTransition(ExecuteTransitionRequest) returns (ExecuteTransitionResponse);
+  rpc AllowedTransitions(AllowedTransitionsRequest) returns (AllowedTransitionsResponse);
+  rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
+}
+
+message InitiateRequest {
+  string workflow_type_id = 1;
+  string entity_type = 2;
+  string entity_id = 3;
+  repeated string role_ids = 4;
+  string requested_by = 5;
+  string metadata_json = 6;
+}
+
+message InitiateResponse {
+  string instance_id = 1;
+  // The initial status the instance was placed at (id, active flag, and display
+  // name/color so callers can project the status without a second lookup).
+  string initial_status_id = 2;
+  bool initial_status_active = 3;
+  string initial_status_name = 4;
+  string initial_status_color = 5;
+}
+
+message ExecuteTransitionRequest {
+  string workflow_type_id = 1;
+  string entity_type = 2;
+  string entity_id = 3;
+  string from_status_id = 4;
+  string to_status_id = 5;
+  string note = 6;
+  repeated string role_ids = 7;
+  string requested_by = 8;
+}
+
+message ExecuteTransitionResponse {
+  string instance_id = 1;
+  string from_status_id = 2;
+  string to_status_id = 3;
+  bool closed = 4;
+  string log_id = 5;
+  // The status the instance just moved INTO: active flag + display name/color.
+  bool to_status_active = 6;
+  string to_status_name = 7;
+  string to_status_color = 8;
+}
+
+message AllowedTransitionsRequest {
+  string workflow_type_id = 1;
+  string entity_type = 2;
+  string entity_id = 3;
+  repeated string role_ids = 4;
+  string requested_by = 5;
+}
+
+message AllowedTransition {
+  string to_status_id = 1;
+  string to_status_name = 2;
+  string to_status_slug = 3;
+  string rule_id = 4;
+}
+
+message AllowedTransitionsResponse {
+  string instance_id = 1;
+  string current_status_id = 2;
+  bool is_closed = 3;
+  repeated AllowedTransition transitions = 4;
+  // The instance's CURRENT status: active flag + display name/color.
+  bool current_status_active = 5;
+  string current_status_name = 6;
+  string current_status_color = 7;
+}
+
+message GetLogsRequest {
+  string workflow_type_id = 1;
+  string entity_type = 2;
+  string entity_id = 3;
+  string requested_by = 4;
+}
+
+message TransitionLogEntry {
+  string id = 1;
+  string instance_id = 2;
+  string from_status_id = 3;
+  string to_status_id = 4;
+  string role_id = 5;
+  string requested_by = 6;
+  string note = 7;
+  int64 created_at = 8;
+}
+
+message GetLogsResponse {
+  repeated TransitionLogEntry logs = 1;
+}

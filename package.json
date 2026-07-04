@@ -10,6 +10,8 @@
         "build": "tsc -p .",
         "serve": "node build/index.js",
         "start:once": "tsc -p . && node build/index.js",
+        "grpc": "node build/grpc.js",
+        "seed": "node build/seed.js",
         "format": "prettier --write \"src/**/*.ts\""
     },
     "author": "mPower Social Enterprises Ltd.",

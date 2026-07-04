@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package accounts.v1;
+
+// Engine -> owning-service status projection. After the engine commits a
+// transition (or initiates an instance) it calls SyncEntityStatus on the
+// service that owns the entity, pushing the new current status so that service
+// can project it onto its own entity row WITHOUT polling the engine. This keeps
+// the owner's local status copy fresh even when the transition was driven
+// straight against the engine (e.g. by the admin panel), not through the owner.
+//
+// Authenticated with the engine's service API key as `x-api-key` metadata (NOT
+// the gateway JWT). Best-effort from the engine's side: the transition is
+// already committed, so a sync failure is logged and never rolled back.
+// Keep this file byte-identical in every consumer of the service.
+
+service EntityStatusService {
+  rpc SyncEntityStatus(SyncEntityStatusRequest) returns (SyncEntityStatusResponse);
+}
+
+message SyncEntityStatusRequest {
+  string entity_type = 1;
+  string entity_id = 2;
+  string status_id = 3;
+  string status_name = 4;
+  string status_color = 5; // empty string = unset
+  bool status_active = 6;
+  bool closed = 7;
+}
+
+message SyncEntityStatusResponse {
+  bool ok = 1;
+}

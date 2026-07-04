@@ -60,6 +60,29 @@ const envSchema = z.object({
     .transform((v) => parseInt(v, 10))
     .or(z.number())
     .optional(),
+
+  // Workflow engine (inter-service gRPC CLIENT). Drives the wallet lifecycle
+  // (FR-WL-6). Unset ⇒ wallet creation still works but skips initiate; wallet
+  // stays at its local default status.
+  WORKFLOW_GRPC_TARGET: z.string().min(1).optional(),
+  WORKFLOW_API_KEY: z.string().min(1).optional(),
+  WORKFLOW_MODULE_ID: z.string().min(1).optional(),
+  WORKFLOW_GRPC_DEADLINE_MS: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+
+  // Per-entity workflowType id (registered onto workflowEntities at boot).
+  WALLET_TYPE_ID: z.string().min(1).optional(),
+
+  // gRPC inbound server (EntityStatus push from the engine).
+  GRPC_PORT: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+  GRPC_BIND_ADDRESS: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -132,6 +155,22 @@ export const config = {
       typeof env.PERMISSION_CACHE_TTL_MS === 'number'
         ? env.PERMISSION_CACHE_TTL_MS
         : 10000,
+  },
+  workflow: {
+    // Workflow engine gRPC client config (wallet lifecycle).
+    grpcTarget: env.WORKFLOW_GRPC_TARGET ?? '',
+    apiKey: env.WORKFLOW_API_KEY ?? '',
+    moduleId: env.WORKFLOW_MODULE_ID ?? '',
+    deadlineMs:
+      typeof env.WORKFLOW_GRPC_DEADLINE_MS === 'number'
+        ? env.WORKFLOW_GRPC_DEADLINE_MS
+        : 10000,
+    // Per-entity workflowType ids (registered onto workflowEntities at boot).
+    walletTypeId: env.WALLET_TYPE_ID ?? '',
+  },
+  grpc: {
+    port: typeof env.GRPC_PORT === 'number' ? env.GRPC_PORT : 50072,
+    bindAddress: env.GRPC_BIND_ADDRESS ?? '0.0.0.0',
   },
   ipWhitelist: env.IP_WHITELIST
     ? env.IP_WHITELIST.split(',')
