@@ -8,6 +8,11 @@ import * as protoLoader from '@grpc/proto-loader';
 import { config } from '../../config/index';
 import { withModuleAuth } from './authInterceptor';
 import { syncEntityStatus } from '../../modules/Wallet/infra/grpc/entityStatus.handlers';
+import {
+  listEntitySources,
+  listEntityValues,
+  entityValuesExist,
+} from '../../modules/Wallet/infra/grpc/entityQuery.handlers';
 
 // proto-loader options shared by every service definition we host.
 const LOADER_OPTS = {
@@ -33,12 +38,23 @@ const EntityStatusService = loadService(
   'proto/entityStatus.proto',
   'accounts.v1.EntityStatusService',
 );
+// Generic entity value-source API: exposes this service's own entities (e.g.
+// WalletType) so other services can tag their select variables against them.
+const EntityQueryService = loadService(
+  'proto/entityQuery.proto',
+  'entityquery.v1.EntityQueryService',
+);
 
 export function buildGrpcServer(): Server {
   const server = new Server();
   // Every method is wrapped with the API-key auth gate (service-to-service).
   server.addService(EntityStatusService.service, {
     SyncEntityStatus: withModuleAuth(syncEntityStatus as any),
+  });
+  server.addService(EntityQueryService.service, {
+    ListEntitySources: withModuleAuth(listEntitySources as any),
+    ListEntityValues: withModuleAuth(listEntityValues as any),
+    EntityValuesExist: withModuleAuth(entityValuesExist as any),
   });
   return server;
 }
@@ -52,7 +68,7 @@ export function startGrpcServer(): void {
       process.exit(1);
     }
     console.log(
-      `[grpc] EntityStatusService listening on ${config.grpc.bindAddress}:${port}`,
+      `[grpc] EntityStatusService + EntityQueryService listening on ${config.grpc.bindAddress}:${port}`,
     );
   });
 }

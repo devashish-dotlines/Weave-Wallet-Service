@@ -42,4 +42,7 @@ export const PERMISSIONS = {
   // Wallet workflow (FR-WL-6 / FR-WF-1), used by the generic /v1/workflow router.
   WALLET_WORKFLOW_READ: 'wallet.wallet.workflow.read',
   WALLET_WORKFLOW_TRANSITION: 'wallet.wallet.workflow.transition',
+
+  // Service registry — issue/list/revoke service-to-service API keys.
+  SERVICE_MANAGE: 'wallet.service.manage',
 } as const;

@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Wallet Service (Catena ERP)",
+    "name": "WF-Micro-SVC Wallet Service (Catena ERP)",
     "description": "Wallet module REST API (first pass: config + wallet CRUD, workflow-integrated). Requests go through the APISix gateway, which maps the public prefix `/api/wallet/*` onto the service's internal `/api/v1/wallet/*`. Set {{baseUrl}} to the gateway and {{token}} to a gateway JWT whose principal holds the relevant `wallet.*` permissions (or is a superuser). Create requests auto-capture the new id into a collection variable.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -15,10 +15,6 @@
     ]
   },
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:9080"
-    },
     {
       "key": "token",
       "value": ""
@@ -50,9 +46,91 @@
     {
       "key": "txId",
       "value": ""
+    },
+    {
+      "key": "serviceId",
+      "value": ""
+    },
+    {
+      "key": "serviceApiKey",
+      "value": ""
     }
   ],
   "item": [
+    {
+      "name": "Keycloak",
+      "item": [
+        {
+          "name": "Get user token (password grant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "  pm.collectionVariables.set('token', json.access_token);",
+                  "  pm.environment.set(\"token\", json.access_token);",
+                  "  console.log('Saved access_token to {{token}}');",
+                  "}",
+                  "pm.test('got access_token', () => pm.expect(json.access_token).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{kcLoginClientId}}"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{kcLoginClientSecret}}",
+                  "description": "only if the login client is confidential",
+                  "disabled": true
+                },
+                {
+                  "key": "username",
+                  "value": "{{kcUsername}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{kcPassword}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{kcBaseUrl}}/realms/{{kcRealm}}/protocol/openid-connect/token",
+              "host": [
+                "{{kcBaseUrl}}"
+              ],
+              "path": [
+                "realms",
+                "{{kcRealm}}",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "Human user token from Keycloak. The test script saves access_token into the shared {{token}} variable used by every request."
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "Balance Types",
       "item": [
@@ -62,12 +140,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/balance-types",
+              "raw": "{{baseUrl}}/wallet/balance-types",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "balance-types"
               ]
@@ -86,12 +163,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/balance-types",
+              "raw": "{{baseUrl}}/wallet/balance-types",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "balance-types"
               ]
@@ -134,12 +210,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/balance-types/{{balanceTypeId}}",
+              "raw": "{{baseUrl}}/wallet/balance-types/{{balanceTypeId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "balance-types",
                 "{{balanceTypeId}}"
@@ -163,12 +238,11 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/balance-types/{{balanceTypeId}}",
+              "raw": "{{baseUrl}}/wallet/balance-types/{{balanceTypeId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "balance-types",
                 "{{balanceTypeId}}"
@@ -188,12 +262,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/uoms",
+              "raw": "{{baseUrl}}/wallet/uoms",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "uoms"
               ]
@@ -212,12 +285,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/uoms",
+              "raw": "{{baseUrl}}/wallet/uoms",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "uoms"
               ]
@@ -260,12 +332,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/uoms/{{uomId}}",
+              "raw": "{{baseUrl}}/wallet/uoms/{{uomId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "uoms",
                 "{{uomId}}"
@@ -289,12 +360,11 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/uoms/{{uomId}}",
+              "raw": "{{baseUrl}}/wallet/uoms/{{uomId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "uoms",
                 "{{uomId}}"
@@ -314,12 +384,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/owner-types",
+              "raw": "{{baseUrl}}/wallet/owner-types",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "owner-types"
               ]
@@ -338,12 +407,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/owner-types",
+              "raw": "{{baseUrl}}/wallet/owner-types",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "owner-types"
               ]
@@ -386,12 +454,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/owner-types/{{ownerTypeId}}",
+              "raw": "{{baseUrl}}/wallet/owner-types/{{ownerTypeId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "owner-types",
                 "{{ownerTypeId}}"
@@ -415,12 +482,11 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/owner-types/{{ownerTypeId}}",
+              "raw": "{{baseUrl}}/wallet/owner-types/{{ownerTypeId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "owner-types",
                 "{{ownerTypeId}}"
@@ -440,12 +506,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallet-types",
+              "raw": "{{baseUrl}}/wallet/wallet-types",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallet-types"
               ]
@@ -464,12 +529,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallet-types",
+              "raw": "{{baseUrl}}/wallet/wallet-types",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallet-types"
               ]
@@ -512,12 +576,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallet-types/{{walletTypeId}}",
+              "raw": "{{baseUrl}}/wallet/wallet-types/{{walletTypeId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallet-types",
                 "{{walletTypeId}}"
@@ -541,12 +604,11 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallet-types/{{walletTypeId}}",
+              "raw": "{{baseUrl}}/wallet/wallet-types/{{walletTypeId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallet-types",
                 "{{walletTypeId}}"
@@ -566,12 +628,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets",
+              "raw": "{{baseUrl}}/wallet/wallets",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets"
               ]
@@ -590,12 +651,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets",
+              "raw": "{{baseUrl}}/wallet/wallets",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets"
               ]
@@ -634,12 +694,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets/{{walletId}}",
+              "raw": "{{baseUrl}}/wallet/wallets/{{walletId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets",
                 "{{walletId}}"
@@ -659,12 +718,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets/{{walletId}}",
+              "raw": "{{baseUrl}}/wallet/wallets/{{walletId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets",
                 "{{walletId}}"
@@ -688,12 +746,11 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets/{{walletId}}",
+              "raw": "{{baseUrl}}/wallet/wallets/{{walletId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets",
                 "{{walletId}}"
@@ -718,12 +775,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets/{{walletId}}/topup",
+              "raw": "{{baseUrl}}/wallet/wallets/{{walletId}}/topup",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets",
                 "{{walletId}}",
@@ -770,12 +826,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets/{{walletId}}/debit",
+              "raw": "{{baseUrl}}/wallet/wallets/{{walletId}}/debit",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets",
                 "{{walletId}}",
@@ -822,12 +877,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets/{{walletId}}/transfer",
+              "raw": "{{baseUrl}}/wallet/wallets/{{walletId}}/transfer",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets",
                 "{{walletId}}",
@@ -869,12 +923,11 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets/{{walletId}}/recompute",
+              "raw": "{{baseUrl}}/wallet/wallets/{{walletId}}/recompute",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets",
                 "{{walletId}}",
@@ -891,12 +944,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/wallets/{{walletId}}/transactions",
+              "raw": "{{baseUrl}}/wallet/wallets/{{walletId}}/transactions",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "wallets",
                 "{{walletId}}",
@@ -912,15 +964,107 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/wallet/transactions/{{txId}}",
+              "raw": "{{baseUrl}}/wallet/transactions/{{txId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
                 "wallet",
                 "transactions",
                 "{{txId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Service Registration",
+      "description": "Service-to-service API key registry (register/list/revoke). The raw apiKey is returned ONCE on registration and captured into the {{serviceApiKey}} collection variable. Requires the '<service>.service.manage' permission (superusers bypass).",
+      "item": [
+        {
+          "name": "Register service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  var b = pm.response.json();",
+                  "  pm.collectionVariables.set('serviceId', b.id);",
+                  "  pm.collectionVariables.set('serviceApiKey', b.apiKey);",
+                  "  console.log('serviceId =', b.id);",
+                  "  console.log('apiKey (shown once) =', b.apiKey);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wallet",
+                "services"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"rateengine\",\n  \"description\": \"Service-to-service API consumer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wallet",
+                "services"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke service",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/services/{{serviceId}}/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wallet",
+                "services",
+                "{{serviceId}}",
+                "revoke"
               ]
             }
           },

@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package entityquery.v1;
+
+// Generic "entity value source" contract. Any service that wants to expose one
+// or more of its entities as a selectable allowed-values source for another
+// service's variables implements this. The Rate Engine is a CONSUMER: when an
+// admin tags a single_select/multi_select variable to an entity, its allowed
+// values are the live set returned here, and at evaluation each supplied key is
+// validated against ListEntityValues / EntityValuesExist.
+//
+// Callers authenticate with a per-consumer service API key supplied as
+// `x-api-key` metadata (NOT the gateway JWT). Keep this file byte-identical in
+// every consumer and provider.
+
+service EntityQueryService {
+  // The entities this service offers as selectable value sources (for the admin
+  // picker: "tag this variable to …").
+  rpc ListEntitySources(ListEntitySourcesRequest) returns (ListEntitySourcesResponse);
+  // The current key/label pairs of one entity (the allowed-values set).
+  rpc ListEntityValues(ListEntityValuesRequest) returns (ListEntityValuesResponse);
+  // Cheap membership check for a specific set of keys at evaluation time.
+  rpc EntityValuesExist(EntityValuesExistRequest) returns (EntityValuesExistResponse);
+}
+
+message EntitySource {
+  string service = 1;       // stable service key, e.g. "timebank"
+  string entity = 2;        // entity key, e.g. "time_band"
+  string display_name = 3;  // human label for the picker
+  string key_field = 4;     // entity field stored as the value (default "id")
+  string value_field = 5;   // entity field shown as the label (default "name")
+}
+
+message ListEntitySourcesRequest {}
+message ListEntitySourcesResponse { repeated EntitySource sources = 1; }
+
+message EntityValue {
+  string key = 1;    // stored/evaluated value (e.g. the entity id)
+  string value = 2;  // display label (e.g. the entity name)
+}
+
+message ListEntityValuesRequest {
+  string service = 1;
+  string entity = 2;
+}
+message ListEntityValuesResponse {
+  bool found = 1;                    // false ⇒ unknown service/entity
+  repeated EntityValue values = 2;
+}
+
+message EntityValuesExistRequest {
+  string service = 1;
+  string entity = 2;
+  repeated string keys = 3;
+}
+message EntityValuesExistResponse {
+  bool found = 1;                    // false ⇒ unknown service/entity
+  repeated string missing_keys = 2; // subset of `keys` not present
+}

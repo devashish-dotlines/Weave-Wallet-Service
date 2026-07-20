@@ -8,6 +8,7 @@ import { OwnerType } from '../models/Wallet/ownerType';
 import { WalletType } from '../models/Wallet/walletType';
 import { Wallet } from '../models/Wallet/wallet';
 import { WalletTransaction } from '../models/Wallet/walletTransaction';
+import { RegisteredService } from '../models/Wallet/registeredService';
 
 import { config } from '../../../config/index';
 
@@ -31,6 +32,7 @@ export const sequelizeConnection = new Sequelize(
       WalletType,
       Wallet,
       WalletTransaction,
+      RegisteredService,
       // Register new module models here.
     ],
     port: dbConfig.port,

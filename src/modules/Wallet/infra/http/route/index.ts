@@ -40,8 +40,26 @@ import {
   listWalletTransactionsController,
   getWalletTransactionController,
 } from '../../../useCases/walletTransaction';
+import {
+  registerServiceController,
+  listServicesController,
+  revokeServiceController,
+} from '../../../useCases/Service';
 
 const walletRouter = express.Router();
+
+// Registered services (service-to-service API keys). Issue/list/revoke opaque
+// keys consumers present as `x-api-key`. The raw key is returned ONCE on
+// registration and never again.
+walletRouter.post('/services', requirePermission(PERMISSIONS.SERVICE_MANAGE), (req, res) =>
+  registerServiceController.execute(req, res),
+);
+walletRouter.get('/services', requirePermission(PERMISSIONS.SERVICE_MANAGE), (req, res) =>
+  listServicesController.execute(req, res),
+);
+walletRouter.post('/services/:id/revoke', requirePermission(PERMISSIONS.SERVICE_MANAGE), (req, res) =>
+  revokeServiceController.execute(req, res),
+);
 
 // Balance types (FR-WL-2)
 walletRouter.get('/balance-types', requirePermission(PERMISSIONS.BALANCE_TYPE_READ), (req, res) =>

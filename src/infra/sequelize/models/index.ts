@@ -11,6 +11,7 @@ import { OwnerType } from './Wallet/ownerType';
 import { WalletType } from './Wallet/walletType';
 import { Wallet } from './Wallet/wallet';
 import { WalletTransaction } from './Wallet/walletTransaction';
+import { RegisteredService } from './Wallet/registeredService';
 
 let models: any = {};
 let modelsLoaded = false;
@@ -27,6 +28,7 @@ const createModels = () => {
   models['WalletType'] = WalletType;
   models['Wallet'] = Wallet;
   models['WalletTransaction'] = WalletTransaction;
+  models['RegisteredService'] = RegisteredService;
 
   // Register new module models here, e.g.:
   // models['<ModelName>'] = <ModelName>;
