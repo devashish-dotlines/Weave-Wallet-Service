@@ -5,27 +5,17 @@ require('dotenv').config();
 // its own process (`npm run grpc`).
 import './infra/sequelize';
 import './modules/Wallet/repos';
-import { Auth } from './core/middleware/auth';
-import { AuthToken } from './core/service/authToken';
 import { registerWalletWorkflowEntities } from './modules/Wallet/infra/workflow/registerEntities';
 import { startGrpcServer } from './infra/grpc/server';
 
-// Service-to-service auth for inbound gRPC (the EntityStatus push from the
-// engine). Resolve the caller from its HMAC-signed service API key (the same
-// primitive REST `authenticateAPIKey` accepts). Fail-closed: an invalid key
-// resolves to null.
-Auth.moduleApiKeyResolver = async (apiKey: string) => {
-  try {
-    const user = AuthToken.verifyAPIKey(apiKey);
-    return {
-      id: String(user.id ?? ''),
-      name: String((user as any).userName ?? 'service'),
-      apiKey,
-    };
-  } catch {
-    return null;
-  }
-};
+// NOTE: service-to-service auth for inbound gRPC is installed by the
+// `./modules/Wallet/repos` import above — the DB-backed resolver that verifies
+// the presented key against the `registered_service` table, i.e. the keys the
+// /v1/wallet/services registration API issues. This module used to overwrite
+// that slot with a JWT verifier (`AuthToken.verifyAPIKey`), which silently broke
+// every registry-issued key over gRPC (imports evaluate before the module body,
+// so the override always won) while REST kept working, since the HTTP entrypoint
+// never overrode it. Do not reintroduce that override.
 
 // The EntityStatusService handler projects status via the workflow-entity
 // registry (syncStatus). This process loads neither the HTTP app nor the wallet

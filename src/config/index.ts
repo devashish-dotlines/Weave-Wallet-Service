@@ -170,7 +170,10 @@ export const config = {
   },
   grpc: {
     port: typeof env.GRPC_PORT === 'number' ? env.GRPC_PORT : 50072,
-    bindAddress: env.GRPC_BIND_ADDRESS ?? '0.0.0.0',
+    // Loopback default: this port is plaintext and authenticated by a bearer
+    // service key — it must not be reachable off-host. Override only when callers
+    // genuinely live elsewhere, and firewall it if so.
+    bindAddress: env.GRPC_BIND_ADDRESS ?? '127.0.0.1',
   },
   ipWhitelist: env.IP_WHITELIST
     ? env.IP_WHITELIST.split(',')
