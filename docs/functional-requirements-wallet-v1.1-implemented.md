@@ -65,6 +65,13 @@ It integrates with:
   an optional **description**, and an **active** flag.
 - **FR-BT-3** A balance type's code shall be unique among live rows; a duplicate create is
   rejected.
+- **FR-BT-4** A balance type shall carry a set of **allowed UOMs** (`allowedUomIds`) — not
+  every UOM is meaningful for every balance type (CASH in BDT/USD, POINTS in PTS). Each
+  tagged id must reference a live UOM or the request is rejected (`404 Not Found`). An
+  **empty set means unrestricted** (any UOM accepted), which is also how rows tagged before
+  this field existed behave. On update the field is a **whole-list replace** when present —
+  send `[]` to clear the restriction, omit it to leave the tags untouched.
+- **FR-BT-5** A balance type **in use** by any wallet type shall not be deletable.
 
 ## 3. Units of Measure (UOM)
 
@@ -74,6 +81,8 @@ It integrates with:
   **symbol**, and an **active** flag.
 - **FR-UOM-3** A UOM is the unit that denominates a wallet's value (money or non-money);
   it is the first-pass replacement for the baseline's `Currency` reference (D-1).
+- **FR-UOM-4** Which UOMs are applicable is scoped per balance type via the allowed-UOM
+  tags (FR-BT-4); the pairing is enforced at wallet creation (FR-WL-5).
 
 ## 4. Owner Types
 
@@ -88,11 +97,13 @@ It integrates with:
 - **FR-WT-1** The system shall manage **wallet types** (configuration templates) under
   `/wallet/wallet-types`, each gated by `wallet.wallet-type.*`.
 - **FR-WT-2** A wallet type shall carry: **name**, optional **description**, **category**
-  (prepaid / postpaid / reward / escrow), **overdraft-allowed** flag with optional
+  (prepaid / postpaid / reward / escrow), a **balance type** (the nature of the value every
+  wallet of this type holds), **overdraft-allowed** flag with optional
   **overdraft limit**, **allow-transfers-out** and **allow-withdrawals** flags, a
   **required KYC level** (stored only), a **GL account code** (stored only — no GL bridge
   this pass), and an **active** flag.
 - **FR-WT-3** Invariants enforced on create/update: category must be one of the known set;
+  the **balance type** is required and must reference a live row (`404 Not Found` otherwise);
   overdraft limit must be non-negative and only valid when overdraft is allowed; required
   KYC level must be non-negative.
 - **FR-WT-4** A wallet type **in use** by any wallet shall not be deletable.
@@ -109,7 +120,7 @@ It integrates with:
 - **FR-WL-1** The system shall list, get, create, update, and delete wallets under
   `/wallet/wallets`, each gated by `wallet.wallet.*`.
 - **FR-WL-2** A wallet shall carry: an auto-generated unique **code** (prefix `WAL`), a
-  **wallet type**, a **balance type**, a **UOM**, an **owner** (`ownerTypeId` FK +
+  **wallet type** (which supplies the balance type), a **UOM**, an **owner** (`ownerTypeId` FK +
   opaque `ownerId` string), an optional **parent wallet** (self-reference), and an optional
   **display name**.
 - **FR-WL-3** A wallet shall carry cached **balance** and **held amount** decimal columns
@@ -118,10 +129,11 @@ It integrates with:
   **Held amount** is present but not yet moved (holds deferred).
 - **FR-WL-4** A wallet shall carry optional per-wallet controls: **min/max balance**,
   **daily/monthly debit limits**, and an **expiry** timestamp (stored; not yet enforced).
-- **FR-WL-5** On create, the wallet's **wallet type, balance type, UOM, owner type**, and
+- **FR-WL-5** On create, the wallet's **wallet type, UOM, owner type**, and
   (if given) **parent wallet** must reference live rows, or the request is rejected
-  (`404 Not Found`). `ownerId` is stored as-is and **not** resolved against any external
-  service.
+  (`404 Not Found`). The **UOM must additionally be allowed** by the balance type that the
+  wallet type carries (FR-BT-4), or the request is rejected (`422` business-rule error).
+  `ownerId` is stored as-is and **not** resolved against any external service.
 
 ### 6.2 Wallet code
 
@@ -230,8 +242,9 @@ Carried forward from the v1.0 baseline, **not implemented**:
   be deleted.
 - **NFR-3 (Soft delete).** Deletes are soft (`voided` + `deleted_at` / `deleted_by`) via the
   shared `BaseRepo`.
-- **NFR-4 (Idempotent setup).** The `npm run seed` command upserts default balance types,
-  UOMs, and owner types keyed by natural code — safe to re-run.
+- **NFR-4 (Idempotent setup).** The `npm run seed` command upserts default UOMs, balance types
+  (with their allowed-UOM tags), and owner types keyed by natural code — safe to re-run.
+  UOMs seed first, since the balance-type tags resolve them by code.
 - **NFR-5 (Audit columns).** Every table carries the standard audit block
   (`voided`, `created/updated/deleted` at/by unix-seconds BIGINT, `serverVersion`).
 - **NFR-6 (Validation gate).** `npx tsc --noEmit` is the sole validation gate; there is no
@@ -247,9 +260,10 @@ All tables carry the standard audit block; PKs are UUIDv4.
 | --- | --- |
 | `wlt_balance_type` | `code`* , `name`, `description?`, `is_active` |
 | `wlt_uom` | `code`* , `name`, `symbol?`, `is_active` |
+| `wlt_balance_type_uom` | `balance_type_id`→, `uom_id`→ — allowed-UOM tags (FR-BT-4); no live rows ⇒ unrestricted |
 | `wlt_owner_type` | `code`* , `name`, `description?`, `is_active` |
-| `wlt_wallet_type` | `name`, `description?`, `category`, `overdraft_allowed`, `overdraft_limit?`, `allow_transfers_out`, `allow_withdrawals`, `required_kyc_level`, `gl_account_code?`, `is_active` |
-| `wlt_wallet` | `code`* , `wallet_type_id`→, `balance_type_id`→, `uom_id`→, `owner_type_id`→, `owner_id`, `parent_wallet_id?`→(self), `display_name?`, `balance`, `held_amount`, `min_balance?`, `max_balance?`, `daily_debit_limit?`, `monthly_debit_limit?`, `expires_at?`, `status`, `status_id?`, `status_name?`, `status_color?` |
+| `wlt_wallet_type` | `name`, `description?`, `category`, `balance_type_id`→, `overdraft_allowed`, `overdraft_limit?`, `allow_transfers_out`, `allow_withdrawals`, `required_kyc_level`, `gl_account_code?`, `is_active` |
+| `wlt_wallet` | `code`* , `wallet_type_id`→, `uom_id`→, `owner_type_id`→, `owner_id`, `parent_wallet_id?`→(self), `display_name?`, `balance`, `held_amount`, `min_balance?`, `max_balance?`, `daily_debit_limit?`, `monthly_debit_limit?`, `expires_at?`, `status`, `status_id?`, `status_name?`, `status_color?` |
 | `wlt_wallet_transaction` | `code`* , `wallet_id`→, `tx_type`, `direction`, `counterparty_wallet_id?`→, `amount`, `balance_before`, `balance_after`, `state`, `idempotency_key?`* , `parent_transaction_id?`, `description?` |
 
 `*` unique · `→` FK
@@ -292,8 +306,8 @@ lifecycle (used by the generic workflow surface).
 ## 13. Verification
 
 - `npx tsc --noEmit` — passes (the only gate).
-- `DB_SYNC=true npm start` materializes the six tables (§10); `npm run seed` loads default
-  balance types / UOMs / owner types (idempotent).
+- `DB_SYNC=true npm start` materializes the tables in §10; `npm run seed` loads default
+  UOMs / balance types (with allowed-UOM tags) / owner types (idempotent).
 - CRUD each resource with a gateway token holding the relevant `wallet.*` codes (or a
   superuser). Creating a wallet returns an auto `WAL…` code and an initial `status`.
 - Deleting an in-use wallet type or owner type is rejected.

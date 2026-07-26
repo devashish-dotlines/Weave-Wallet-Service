@@ -12,12 +12,16 @@ import {
   UpdateWalletTypeDTO,
 } from '../../DTO/walletTypeDTO';
 import { IWalletTypeRepo } from '../../repos/interface/IWalletTypeRepo';
+import { IBalanceTypeRepo } from '../../repos/interface/IBalanceTypeRepo';
 import { WalletResponse } from '../shared/response';
 
 export class CreateWalletTypeUseCase
   implements UseCase<CreateWalletTypeDTO, Promise<WalletResponse<string>>>
 {
-  constructor(private readonly repo: IWalletTypeRepo) {}
+  constructor(
+    private readonly repo: IWalletTypeRepo,
+    private readonly balanceTypeRepo: IBalanceTypeRepo,
+  ) {}
 
   async execute(dto: CreateWalletTypeDTO): Promise<WalletResponse<string>> {
     try {
@@ -30,11 +34,21 @@ export class CreateWalletTypeUseCase
         );
       }
 
+      // A missing id falls through to the domain guard (ValidationError); a
+      // supplied one must point at a live balance type.
+      if (
+        dto.balanceTypeId &&
+        !(await this.balanceTypeRepo.exists(dto.balanceTypeId))
+      ) {
+        return left(new BaseErrors.NotFoundError('Balance type not found'));
+      }
+
       const now = DateTimeObject.create(-1).getValue();
       const orError = WalletType.create({
         name: dto.name,
         description: dto.description,
         category: dto.category,
+        balanceTypeId: dto.balanceTypeId,
         overdraftAllowed: dto.overdraftAllowed ?? false,
         overdraftLimit: dto.overdraftLimit,
         allowTransfersOut: dto.allowTransfersOut ?? false,
@@ -65,7 +79,10 @@ export class CreateWalletTypeUseCase
 export class UpdateWalletTypeUseCase
   implements UseCase<UpdateWalletTypeDTO, Promise<WalletResponse<string>>>
 {
-  constructor(private readonly repo: IWalletTypeRepo) {}
+  constructor(
+    private readonly repo: IWalletTypeRepo,
+    private readonly balanceTypeRepo: IBalanceTypeRepo,
+  ) {}
 
   async execute(dto: UpdateWalletTypeDTO): Promise<WalletResponse<string>> {
     try {
@@ -74,12 +91,20 @@ export class UpdateWalletTypeUseCase
         return left(new BaseErrors.NotFoundError('Wallet type not found'));
       }
 
+      if (
+        dto.balanceTypeId &&
+        !(await this.balanceTypeRepo.exists(dto.balanceTypeId))
+      ) {
+        return left(new BaseErrors.NotFoundError('Balance type not found'));
+      }
+
       const now = DateTimeObject.create(-1).getValue();
       const rebuilt = WalletType.create(
         {
           name: dto.name ?? existing.name,
           description: dto.description ?? existing.description,
           category: dto.category ?? existing.category,
+          balanceTypeId: dto.balanceTypeId ?? existing.balanceTypeId,
           overdraftAllowed: dto.overdraftAllowed ?? existing.overdraftAllowed,
           overdraftLimit: dto.overdraftLimit ?? existing.overdraftLimit,
           allowTransfersOut: dto.allowTransfersOut ?? existing.allowTransfersOut,

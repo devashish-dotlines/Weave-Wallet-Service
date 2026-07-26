@@ -1,6 +1,5 @@
 export interface CreateWalletDTO {
   walletTypeId: string;
-  balanceTypeId: string;
   uomId: string;
   ownerTypeId: string;
   ownerId: string;
@@ -33,7 +32,6 @@ export interface WalletDTO {
   id: string;
   code: string;
   walletTypeId: string;
-  balanceTypeId: string;
   uomId: string;
   ownerTypeId: string;
   ownerId: string;

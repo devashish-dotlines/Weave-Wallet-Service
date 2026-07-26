@@ -18,7 +18,6 @@ export interface WalletProps extends BaseEntityProps {
   /** Auto-generated unique code, prefix `WAL` (FR-WL-2). */
   code: string;
   walletTypeId: string;
-  balanceTypeId: string;
   /** Unit of value (UOM replaces currency). */
   uomId: string;
   /** Owner-type lookup FK (Customer, Partner, User, …). */
@@ -55,9 +54,6 @@ export class Wallet extends AuditableEntity<WalletProps> {
   }
   get walletTypeId(): string {
     return this.props.walletTypeId;
-  }
-  get balanceTypeId(): string {
-    return this.props.balanceTypeId;
   }
   get uomId(): string {
     return this.props.uomId;
@@ -155,7 +151,6 @@ export class Wallet extends AuditableEntity<WalletProps> {
     const guard = Guard.againstNullOrUndefinedOrEmptyBulk([
       { argument: props.code, argumentName: 'code' },
       { argument: props.walletTypeId, argumentName: 'walletTypeId' },
-      { argument: props.balanceTypeId, argumentName: 'balanceTypeId' },
       { argument: props.uomId, argumentName: 'uomId' },
       { argument: props.ownerTypeId, argumentName: 'ownerTypeId' },
       { argument: props.ownerId, argumentName: 'ownerId' },

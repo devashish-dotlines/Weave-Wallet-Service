@@ -7,11 +7,12 @@ import {
   IsUUID,
   PrimaryKey,
   ForeignKey,
+  HasMany,
 } from 'sequelize-typescript';
 import { WalletType } from './walletType';
-import { BalanceType } from './balanceType';
 import { Uom } from './uom';
 import { OwnerType } from './ownerType';
+import { WalletUsageRestriction } from './walletUsageRestriction';
 
 @Table({ tableName: 'wlt_wallet', underscored: true, timestamps: false })
 export class Wallet extends Model<Wallet> {
@@ -28,10 +29,6 @@ export class Wallet extends Model<Wallet> {
   @ForeignKey(() => WalletType)
   @Column(DataType.UUID)
   walletTypeId!: string;
-
-  @ForeignKey(() => BalanceType)
-  @Column(DataType.UUID)
-  balanceTypeId!: string;
 
   @ForeignKey(() => Uom)
   @Column(DataType.UUID)
@@ -91,6 +88,10 @@ export class Wallet extends Model<Wallet> {
 
   @Column({ type: DataType.STRING(16), allowNull: true })
   statusColor!: string | null;
+
+  // Usage restrictions (link rows). Empty ⇒ this balance is unrestricted.
+  @HasMany(() => WalletUsageRestriction)
+  usageRestrictions!: WalletUsageRestriction[];
 
   @Default(false)
   @Column

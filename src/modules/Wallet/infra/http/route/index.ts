@@ -14,6 +14,16 @@ import {
   listUomController,
 } from '../../../useCases/uom';
 import {
+  createUsageDimensionController,
+  updateUsageDimensionController,
+  deleteUsageDimensionController,
+  listUsageDimensionController,
+} from '../../../useCases/usageDimension';
+import {
+  setWalletUsageRestrictionsController,
+  listWalletUsageRestrictionsController,
+} from '../../../useCases/walletUsageRestriction';
+import {
   createOwnerTypeController,
   updateOwnerTypeController,
   deleteOwnerTypeController,
@@ -75,6 +85,21 @@ walletRouter.delete('/balance-types/:id', requirePermission(PERMISSIONS.BALANCE_
   deleteBalanceTypeController.execute(req, res),
 );
 
+// Usage dimensions — admin-defined axes a wallet's balance can be restricted
+// along (CALL_TYPE, TIME_BAND, …), with their permitted values.
+walletRouter.get('/usage-dimensions', requirePermission(PERMISSIONS.USAGE_DIMENSION_READ), (req, res) =>
+  listUsageDimensionController.execute(req, res),
+);
+walletRouter.post('/usage-dimensions', requirePermission(PERMISSIONS.USAGE_DIMENSION_CREATE), (req, res) =>
+  createUsageDimensionController.execute(req, res),
+);
+walletRouter.put('/usage-dimensions/:id', requirePermission(PERMISSIONS.USAGE_DIMENSION_UPDATE), (req, res) =>
+  updateUsageDimensionController.execute(req, res),
+);
+walletRouter.delete('/usage-dimensions/:id', requirePermission(PERMISSIONS.USAGE_DIMENSION_DELETE), (req, res) =>
+  deleteUsageDimensionController.execute(req, res),
+);
+
 // Units of measure — the wallet's value unit (UOM replaces currency)
 walletRouter.get('/uoms', requirePermission(PERMISSIONS.UOM_READ), (req, res) =>
   listUomController.execute(req, res),
@@ -132,6 +157,15 @@ walletRouter.put('/wallets/:id', requirePermission(PERMISSIONS.WALLET_UPDATE), (
 );
 walletRouter.delete('/wallets/:id', requirePermission(PERMISSIONS.WALLET_DELETE), (req, res) =>
   deleteWalletController.execute(req, res),
+);
+
+// Wallet usage restrictions — what this balance may be spent on. PUT replaces
+// the whole set; an empty set means unrestricted. Rides the wallet's own perms.
+walletRouter.get('/wallets/:id/usage-restrictions', requirePermission(PERMISSIONS.WALLET_READ), (req, res) =>
+  listWalletUsageRestrictionsController.execute(req, res),
+);
+walletRouter.put('/wallets/:id/usage-restrictions', requirePermission(PERMISSIONS.WALLET_UPDATE), (req, res) =>
+  setWalletUsageRestrictionsController.execute(req, res),
 );
 
 // Wallet transactions — balance-affecting operations. Each writes a

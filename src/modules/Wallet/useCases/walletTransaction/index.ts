@@ -1,4 +1,9 @@
-import { walletRepo, walletTypeRepo, walletTransactionRepo } from '../../repos';
+import {
+  walletRepo,
+  walletTypeRepo,
+  walletTransactionRepo,
+  walletUsageRestrictionRepo,
+} from '../../repos';
 import {
   CreditWalletUseCase,
   DebitWalletUseCase,
@@ -24,11 +29,13 @@ const debitWalletUseCase = new DebitWalletUseCase(
   walletRepo,
   walletTypeRepo,
   walletTransactionRepo,
+  walletUsageRestrictionRepo,
 );
 const transferUseCase = new TransferUseCase(
   walletRepo,
   walletTypeRepo,
   walletTransactionRepo,
+  walletUsageRestrictionRepo,
 );
 const recomputeUseCase = new RecomputeWalletBalanceUseCase(
   walletRepo,

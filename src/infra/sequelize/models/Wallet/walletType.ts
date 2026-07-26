@@ -6,7 +6,9 @@ import {
   DataType,
   IsUUID,
   PrimaryKey,
+  ForeignKey,
 } from 'sequelize-typescript';
+import { BalanceType } from './balanceType';
 
 @Table({ tableName: 'wlt_wallet_type', underscored: true, timestamps: false })
 export class WalletType extends Model<WalletType> {
@@ -25,6 +27,11 @@ export class WalletType extends Model<WalletType> {
   // 'prepaid' | 'postpaid' | 'reward' | 'escrow'
   @Column({ type: DataType.STRING(16) })
   category!: string;
+
+  // The balance type every wallet of this type carries.
+  @ForeignKey(() => BalanceType)
+  @Column(DataType.UUID)
+  balanceTypeId!: string;
 
   @Default(false)
   @Column

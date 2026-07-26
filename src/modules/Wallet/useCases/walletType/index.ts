@@ -1,4 +1,4 @@
-import { walletTypeRepo } from '../../repos';
+import { walletTypeRepo, balanceTypeRepo } from '../../repos';
 import {
   CreateWalletTypeUseCase,
   UpdateWalletTypeUseCase,
@@ -12,8 +12,14 @@ import {
   ListWalletTypeController,
 } from './walletType.controller';
 
-const createWalletTypeUseCase = new CreateWalletTypeUseCase(walletTypeRepo);
-const updateWalletTypeUseCase = new UpdateWalletTypeUseCase(walletTypeRepo);
+const createWalletTypeUseCase = new CreateWalletTypeUseCase(
+  walletTypeRepo,
+  balanceTypeRepo,
+);
+const updateWalletTypeUseCase = new UpdateWalletTypeUseCase(
+  walletTypeRepo,
+  balanceTypeRepo,
+);
 const deleteWalletTypeUseCase = new DeleteWalletTypeUseCase(walletTypeRepo);
 const listWalletTypeUseCase = new ListWalletTypeUseCase(walletTypeRepo);
 

@@ -16,6 +16,8 @@ export interface WalletTypeProps extends BaseEntityProps {
   name: string;
   description?: string;
   category: WalletCategory;
+  /** The balance type every wallet created against this type carries. */
+  balanceTypeId: string;
   overdraftAllowed: boolean;
   /** Only meaningful when overdraftAllowed; the max negative available balance. */
   overdraftLimit?: number;
@@ -45,6 +47,9 @@ export class WalletType extends AuditableEntity<WalletTypeProps> {
   }
   get category(): WalletCategory {
     return this.props.category;
+  }
+  get balanceTypeId(): string {
+    return this.props.balanceTypeId;
   }
   get overdraftAllowed(): boolean {
     return this.props.overdraftAllowed;
@@ -76,6 +81,9 @@ export class WalletType extends AuditableEntity<WalletTypeProps> {
   }
   set category(value: WalletCategory) {
     this.props.category = value;
+  }
+  set balanceTypeId(value: string) {
+    this.props.balanceTypeId = value;
   }
   set overdraftAllowed(value: boolean) {
     this.props.overdraftAllowed = value;
@@ -110,6 +118,7 @@ export class WalletType extends AuditableEntity<WalletTypeProps> {
     const guard = Guard.againstNullOrUndefinedOrEmptyBulk([
       { argument: props.name, argumentName: 'name' },
       { argument: props.category, argumentName: 'category' },
+      { argument: props.balanceTypeId, argumentName: 'balanceTypeId' },
       { argument: props.createdBy, argumentName: 'createdBy' },
       { argument: props.updatedBy, argumentName: 'updatedBy' },
     ]);

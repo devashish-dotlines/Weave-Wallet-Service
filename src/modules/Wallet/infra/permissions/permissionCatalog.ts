@@ -27,6 +27,11 @@ export const PERMISSIONS = {
   WALLET_TYPE_UPDATE: 'wallet.wallet-type.update',
   WALLET_TYPE_DELETE: 'wallet.wallet-type.delete',
 
+  USAGE_DIMENSION_CREATE: 'wallet.usage-dimension.create',
+  USAGE_DIMENSION_READ: 'wallet.usage-dimension.read',
+  USAGE_DIMENSION_UPDATE: 'wallet.usage-dimension.update',
+  USAGE_DIMENSION_DELETE: 'wallet.usage-dimension.delete',
+
   WALLET_CREATE: 'wallet.wallet.create',
   WALLET_READ: 'wallet.wallet.read',
   WALLET_UPDATE: 'wallet.wallet.update',

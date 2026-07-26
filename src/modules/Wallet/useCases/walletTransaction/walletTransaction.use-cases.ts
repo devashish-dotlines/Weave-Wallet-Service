@@ -24,6 +24,9 @@ import {
 import { IWalletRepo } from '../../repos/interface/IWalletRepo';
 import { IWalletTypeRepo } from '../../repos/interface/IWalletTypeRepo';
 import { IWalletTransactionRepo } from '../../repos/interface/IWalletTransactionRepo';
+import { IWalletUsageRestrictionRepo } from '../../repos/interface/IWalletUsageRestrictionRepo';
+import { UsageContext, evaluateUsage } from '../../domain/usageContext';
+import { config } from '../../../../config';
 import { WalletResponse } from '../shared/response';
 
 const TX_CODE_PREFIX = 'WTX';
@@ -49,6 +52,41 @@ function balanceFloor(wallet: Wallet, type: WalletType): number {
     floor = Math.max(floor, wallet.minBalance);
   }
   return floor;
+}
+
+/**
+ * Why this spend is not allowed out of this wallet, or null when it is.
+ *
+ * Dormant unless `USAGE_RESTRICTION_MODE` is set: 'off' short-circuits before
+ * touching the DB, and 'shadow' evaluates and logs but always returns null, so
+ * the would-be rejections can be measured before anyone flips to 'enforce'.
+ *
+ * The `countByWallet === 0` fast path means an unrestricted wallet — every
+ * wallet, today — costs one COUNT and no aggregate load, mirroring the
+ * shortcut `BalanceTypeRepo.isUomAllowed` takes.
+ */
+async function usageRejection(
+  repo: IWalletUsageRestrictionRepo | undefined,
+  walletId: string,
+  context: UsageContext | undefined,
+): Promise<string | null> {
+  const mode = config.usageRestriction.mode;
+  if (mode === 'off' || !repo) return null;
+
+  if ((await repo.countByWallet(walletId)) === 0) return null;
+
+  const rules = await repo.listRulesForEvaluation(walletId);
+  const verdict = evaluateUsage(rules, context);
+  if (verdict.allowed) return null;
+
+  const reason = verdict.reason ?? 'this balance is restricted';
+  if (mode === 'shadow') {
+    console.warn(
+      `[usage-restriction][shadow] wallet ${walletId} would have been rejected: ${reason}`,
+    );
+    return null;
+  }
+  return reason;
 }
 
 async function generateTxCode(repo: IWalletTransactionRepo): Promise<string> {
@@ -170,6 +208,8 @@ export class DebitWalletUseCase
     private readonly walletRepo: IWalletRepo,
     private readonly walletTypeRepo: IWalletTypeRepo,
     private readonly txRepo: IWalletTransactionRepo,
+    // Optional + trailing so existing three-arg construction still type-checks.
+    private readonly usageRestrictionRepo?: IWalletUsageRestrictionRepo,
   ) {}
 
   async execute(dto: DebitWalletDTO): Promise<WalletResponse<string>> {
@@ -195,6 +235,17 @@ export class DebitWalletUseCase
       const type = await this.walletTypeRepo.findById(wallet.walletTypeId);
       if (!type) {
         return left(new BaseErrors.NotFoundError('Wallet type not found'));
+      }
+
+      // What this balance may be spent on — checked before the money math, the
+      // same slot the balance type's UOM tag occupies in CreateWalletUseCase.
+      const restricted = await usageRejection(
+        this.usageRestrictionRepo,
+        wallet.id.toString(),
+        dto.usageContext,
+      );
+      if (restricted) {
+        return left(new BaseErrors.BusinessRuleError(restricted));
       }
 
       const amount = money(dto.amount);
@@ -248,6 +299,8 @@ export class TransferUseCase
     private readonly walletRepo: IWalletRepo,
     private readonly walletTypeRepo: IWalletTypeRepo,
     private readonly txRepo: IWalletTransactionRepo,
+    // Optional + trailing so existing three-arg construction still type-checks.
+    private readonly usageRestrictionRepo?: IWalletUsageRestrictionRepo,
   ) {}
 
   async execute(dto: TransferDTO): Promise<WalletResponse<TransferResultDTO>> {
@@ -311,6 +364,17 @@ export class TransferUseCase
             'The source wallet type does not allow transfers out',
           ),
         );
+      }
+
+      // Source wallet only — the debit leg is the spend. A credit landing in the
+      // destination isn't a use of the destination's balance.
+      const restricted = await usageRejection(
+        this.usageRestrictionRepo,
+        source.id.toString(),
+        dto.usageContext,
+      );
+      if (restricted) {
+        return left(new BaseErrors.BusinessRuleError(restricted));
       }
 
       const amount = money(dto.amount);

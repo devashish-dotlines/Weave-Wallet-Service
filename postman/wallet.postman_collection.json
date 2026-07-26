@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "WF-Micro-SVC Wallet Service (Catena ERP)",
-    "description": "Wallet module REST API (first pass: config + wallet CRUD, workflow-integrated). Requests go through the APISix gateway, which maps the public prefix `/api/wallet/*` onto the service's internal `/api/v1/wallet/*`. Set {{baseUrl}} to the gateway and {{token}} to a gateway JWT whose principal holds the relevant `wallet.*` permissions (or is a superuser). Create requests auto-capture the new id into a collection variable.",
+    "description": "Wallet service API. Lookups are chained by id, so run the folders top to bottom on a fresh environment: Keycloak → UOMs → Balance Types (tags allowed UOMs) → Owner Types → Wallet Types (carries the balance type) → Wallets → Transactions. Each Create request captures its new id into the matching collection variable.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -132,128 +132,6 @@
       ]
     },
     {
-      "name": "Balance Types",
-      "item": [
-        {
-          "name": "List Balance Types",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/wallet/balance-types",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "wallet",
-                "balance-types"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Balance Types",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/wallet/balance-types",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "wallet",
-                "balance-types"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"CASH\",\n  \"name\": \"Cash\",\n  \"description\": \"Stored monetary value\",\n  \"isActive\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "  // create returns the new id as a bare JSON string",
-                  "  pm.collectionVariables.set('balanceTypeId', pm.response.json());",
-                  "  console.log('balanceTypeId =', pm.response.json());",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Update Balance Types",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/wallet/balance-types/{{balanceTypeId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "wallet",
-                "balance-types",
-                "{{balanceTypeId}}"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Cash (updated)\",\n  \"isActive\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Balance Types",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/wallet/balance-types/{{balanceTypeId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "wallet",
-                "balance-types",
-                "{{balanceTypeId}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
       "name": "UOMs",
       "item": [
         {
@@ -374,6 +252,130 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Balance Types",
+      "item": [
+        {
+          "name": "List Balance Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/balance-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wallet",
+                "balance-types"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Balance Types",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/balance-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wallet",
+                "balance-types"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"CASH\",\n  \"name\": \"Cash\",\n  \"description\": \"Stored monetary value\",\n  \"isActive\": true,\n  \"allowedUomIds\": [\n    \"{{uomId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  // create returns the new id as a bare JSON string",
+                  "  pm.collectionVariables.set('balanceTypeId', pm.response.json());",
+                  "  console.log('balanceTypeId =', pm.response.json());",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Balance Types",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/balance-types/{{balanceTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wallet",
+                "balance-types",
+                "{{balanceTypeId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cash (updated)\",\n  \"isActive\": true,\n  \"allowedUomIds\": [\n    \"{{uomId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Balance Types",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/balance-types/{{balanceTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wallet",
+                "balance-types",
+                "{{balanceTypeId}}"
+              ]
+            },
+            "description": "Soft delete. Refused with 422 while any wallet type references this balance type."
+          },
+          "response": []
+        }
+      ],
+      "description": "Balance types tag which UOMs they may be denominated in via allowedUomIds. An empty/omitted list means unrestricted (any UOM accepted). On update the list is a whole-list replace when present — send [] to clear the restriction, omit it to leave the tags untouched. Run the UOMs folder first so {{uomId}} is populated."
     },
     {
       "name": "Owner Types",
@@ -540,7 +542,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Prepaid Standard\",\n  \"description\": \"Standard prepaid wallet\",\n  \"category\": \"prepaid\",\n  \"overdraftAllowed\": false,\n  \"allowTransfersOut\": true,\n  \"allowWithdrawals\": true,\n  \"requiredKycLevel\": 0,\n  \"glAccountCode\": \"2100\",\n  \"isActive\": true\n}",
+              "raw": "{\n  \"name\": \"Prepaid Standard\",\n  \"description\": \"Standard prepaid wallet\",\n  \"category\": \"prepaid\",\n  \"balanceTypeId\": \"{{balanceTypeId}}\",\n  \"overdraftAllowed\": false,\n  \"allowTransfersOut\": true,\n  \"allowWithdrawals\": true,\n  \"requiredKycLevel\": 0,\n  \"glAccountCode\": \"2100\",\n  \"isActive\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -588,13 +590,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Prepaid Standard (updated)\",\n  \"allowWithdrawals\": false,\n  \"isActive\": true\n}",
+              "raw": "{\n  \"name\": \"Prepaid Standard (updated)\",\n  \"balanceTypeId\": \"{{balanceTypeId}}\",\n  \"allowWithdrawals\": false,\n  \"isActive\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Partial update — send only the fields you want changed. balanceTypeId is optional here; when present it re-points the type at a different balance type (404 if unknown)."
           },
           "response": []
         },
@@ -613,11 +616,13 @@
                 "wallet-types",
                 "{{walletTypeId}}"
               ]
-            }
+            },
+            "description": "Soft delete. Refused with 422 while any wallet references this wallet type (FR-WT-4)."
           },
           "response": []
         }
-      ]
+      ],
+      "description": "A wallet type now carries the balanceTypeId — every wallet created against it inherits that balance type (it is no longer sent on the wallet itself). The id must reference a live balance type, so run the Balance Types folder first to populate {{balanceTypeId}}. Delete is refused (422) while any wallet references the type."
     },
     {
       "name": "Wallets",
@@ -662,14 +667,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"walletTypeId\": \"{{walletTypeId}}\",\n  \"balanceTypeId\": \"{{balanceTypeId}}\",\n  \"uomId\": \"{{uomId}}\",\n  \"ownerTypeId\": \"{{ownerTypeId}}\",\n  \"ownerId\": \"customer-0001\",\n  \"displayName\": \"My primary wallet\"\n}",
+              "raw": "{\n  \"walletTypeId\": \"{{walletTypeId}}\",\n  \"uomId\": \"{{uomId}}\",\n  \"ownerTypeId\": \"{{ownerTypeId}}\",\n  \"ownerId\": \"customer-0001\",\n  \"displayName\": \"My primary wallet\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "walletTypeId / balanceTypeId / uomId / ownerTypeId must reference live rows (run the Create requests in the other folders first, or paste ids into the collection variables). ownerId is an opaque string — not resolved cross-service."
+            "description": "walletTypeId / uomId / ownerTypeId must reference live rows (run the Create requests in the other folders first, or paste ids into the collection variables). The balance type is no longer sent here — it comes from the wallet type. The uomId must be one the wallet type's balance type allows, or the request is refused with 422; a balance type with no allowedUomIds tags accepts any UOM. ownerId is an opaque string — not resolved cross-service."
           },
           "response": [],
           "event": [

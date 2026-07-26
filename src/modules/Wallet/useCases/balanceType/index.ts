@@ -1,4 +1,4 @@
-import { balanceTypeRepo } from '../../repos';
+import { balanceTypeRepo, uomRepo } from '../../repos';
 import {
   CreateBalanceTypeUseCase,
   UpdateBalanceTypeUseCase,
@@ -12,8 +12,14 @@ import {
   ListBalanceTypeController,
 } from './balanceType.controller';
 
-const createBalanceTypeUseCase = new CreateBalanceTypeUseCase(balanceTypeRepo);
-const updateBalanceTypeUseCase = new UpdateBalanceTypeUseCase(balanceTypeRepo);
+const createBalanceTypeUseCase = new CreateBalanceTypeUseCase(
+  balanceTypeRepo,
+  uomRepo,
+);
+const updateBalanceTypeUseCase = new UpdateBalanceTypeUseCase(
+  balanceTypeRepo,
+  uomRepo,
+);
 const deleteBalanceTypeUseCase = new DeleteBalanceTypeUseCase(balanceTypeRepo);
 const listBalanceTypeUseCase = new ListBalanceTypeUseCase(balanceTypeRepo);
 

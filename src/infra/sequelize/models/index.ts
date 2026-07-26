@@ -6,12 +6,15 @@ import * as Sequelize from 'sequelize';
 import { ServerVersion } from './serverVersion';
 import { APIKey } from './apiKey';
 import { BalanceType } from './Wallet/balanceType';
+import { BalanceTypeUom } from './Wallet/balanceTypeUom';
 import { Uom } from './Wallet/uom';
 import { OwnerType } from './Wallet/ownerType';
 import { WalletType } from './Wallet/walletType';
 import { Wallet } from './Wallet/wallet';
 import { WalletTransaction } from './Wallet/walletTransaction';
 import { RegisteredService } from './Wallet/registeredService';
+import { UsageDimension } from './Wallet/usageDimension';
+import { WalletUsageRestriction } from './Wallet/walletUsageRestriction';
 
 let models: any = {};
 let modelsLoaded = false;
@@ -23,12 +26,15 @@ const createModels = () => {
   models['ServerVersion'] = ServerVersion;
   models['APIKey'] = APIKey;
   models['BalanceType'] = BalanceType;
+  models['BalanceTypeUom'] = BalanceTypeUom;
   models['Uom'] = Uom;
   models['OwnerType'] = OwnerType;
   models['WalletType'] = WalletType;
   models['Wallet'] = Wallet;
   models['WalletTransaction'] = WalletTransaction;
   models['RegisteredService'] = RegisteredService;
+  models['UsageDimension'] = UsageDimension;
+  models['WalletUsageRestriction'] = WalletUsageRestriction;
 
   // Register new module models here, e.g.:
   // models['<ModelName>'] = <ModelName>;

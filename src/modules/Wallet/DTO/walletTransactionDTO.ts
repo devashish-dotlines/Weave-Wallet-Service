@@ -1,4 +1,5 @@
 import { WalletTxType, WalletTxDirection, WalletTxState } from '../domain/walletTransaction';
+import { UsageContext } from '../domain/usageContext';
 
 /** Top-up (credit) an amount into a wallet. */
 export interface CreditWalletDTO {
@@ -15,6 +16,16 @@ export interface DebitWalletDTO {
   amount: number;
   description?: string;
   idempotencyKey?: string;
+  /**
+   * What this spend is for, keyed by usage-dimension CODE (e.g.
+   * `{ CALL_TYPE: 'LOCAL', TIME_BAND: ['NIGHT', 'WEEKEND'] }`). Checked against
+   * the wallet's usage restrictions.
+   *
+   * Values are already-resolved keys — the wallet compares keys, it does not
+   * resolve the clock or a dialled number. Only consulted when
+   * `config.usageRestriction.mode` is not 'off'.
+   */
+  usageContext?: UsageContext;
   requestedBy: string;
 }
 
@@ -25,6 +36,8 @@ export interface TransferDTO {
   amount: number;
   description?: string;
   idempotencyKey?: string;
+  /** Checked against the SOURCE wallet's restrictions — the debit leg is the spend. */
+  usageContext?: UsageContext;
   requestedBy: string;
 }
 

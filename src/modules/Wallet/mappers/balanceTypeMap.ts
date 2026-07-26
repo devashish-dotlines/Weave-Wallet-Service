@@ -26,6 +26,21 @@ export class BalanceTypeMap extends Mapper<BalanceType> {
     };
   }
 
+  /**
+   * The tag list lives in `wlt_balance_type_uom`, so it arrives either as the
+   * eager-loaded `allowedUoms` rows or as a pre-resolved id array. Untagged
+   * (and pre-existing) rows read back as `[]` — unrestricted.
+   */
+  private static readAllowedUomIds(raw: any): string[] {
+    if (Array.isArray(raw.allowedUomIds)) return raw.allowedUomIds;
+    if (Array.isArray(raw.allowedUoms)) {
+      return raw.allowedUoms
+        .filter((link: any) => !link.voided)
+        .map((link: any) => link.uomId);
+    }
+    return [];
+  }
+
   public static toDomain(raw: any): BalanceType | null {
     if (!raw) return null;
     const domainOrError = BalanceType.create(
@@ -34,6 +49,7 @@ export class BalanceTypeMap extends Mapper<BalanceType> {
         code: raw.code,
         description: raw.description ?? undefined,
         isActive: raw.isActive,
+        allowedUomIds: BalanceTypeMap.readAllowedUomIds(raw),
         voided: raw.voided,
         createdBy: raw.createdBy,
         createdAt: Mapper.toDateRequired(raw.createdAt, 'createdAt', 'BalanceType'),
@@ -58,6 +74,7 @@ export class BalanceTypeMap extends Mapper<BalanceType> {
       code: b.code,
       description: b.description,
       isActive: b.isActive,
+      allowedUomIds: b.allowedUomIds,
     };
   }
 }

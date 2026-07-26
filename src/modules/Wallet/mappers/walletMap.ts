@@ -11,7 +11,6 @@ export class WalletMap extends Mapper<Wallet> {
       id: w.id.toString(),
       code: w.code,
       walletTypeId: w.walletTypeId,
-      balanceTypeId: w.balanceTypeId,
       uomId: w.uomId,
       ownerTypeId: w.ownerTypeId,
       ownerId: w.ownerId,
@@ -45,7 +44,6 @@ export class WalletMap extends Mapper<Wallet> {
       {
         code: raw.code,
         walletTypeId: raw.walletTypeId,
-        balanceTypeId: raw.balanceTypeId,
         uomId: raw.uomId,
         ownerTypeId: raw.ownerTypeId,
         ownerId: raw.ownerId,
@@ -96,7 +94,6 @@ export class WalletMap extends Mapper<Wallet> {
       id: w.id.toString(),
       code: w.code,
       walletTypeId: w.walletTypeId,
-      balanceTypeId: w.balanceTypeId,
       uomId: w.uomId,
       ownerTypeId: w.ownerTypeId,
       ownerId: w.ownerId,

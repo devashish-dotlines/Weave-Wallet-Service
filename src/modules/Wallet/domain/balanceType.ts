@@ -10,6 +10,12 @@ export interface BalanceTypeProps extends BaseEntityProps {
   code: string;
   description?: string;
   isActive: boolean;
+  /**
+   * UOMs this balance type may be denominated in. An **empty list means
+   * unrestricted** — any UOM is accepted — which is also what pre-existing rows
+   * (tagged before this field existed) degrade to.
+   */
+  allowedUomIds: string[];
 }
 
 /**
@@ -34,6 +40,15 @@ export class BalanceType extends AuditableEntity<BalanceTypeProps> {
   get isActive(): boolean {
     return this.props.isActive;
   }
+  get allowedUomIds(): string[] {
+    return this.props.allowedUomIds;
+  }
+
+  /** Empty tag list ⇒ unrestricted, so every UOM passes. */
+  public allowsUom(uomId: string): boolean {
+    if (this.props.allowedUomIds.length === 0) return true;
+    return this.props.allowedUomIds.includes(uomId);
+  }
 
   set name(value: string) {
     this.props.name = value;
@@ -43,6 +58,9 @@ export class BalanceType extends AuditableEntity<BalanceTypeProps> {
   }
   set isActive(value: boolean) {
     this.props.isActive = value;
+  }
+  set allowedUomIds(value: string[]) {
+    this.props.allowedUomIds = value;
   }
 
   private constructor(props: BalanceTypeProps, id?: UniqueEntityID) {
@@ -63,6 +81,7 @@ export class BalanceType extends AuditableEntity<BalanceTypeProps> {
 
     const nn = Guard.againstNullOrUndefinedBulk([
       { argument: props.isActive, argumentName: 'isActive' },
+      { argument: props.allowedUomIds, argumentName: 'allowedUomIds' },
       { argument: props.createdAt, argumentName: 'createdAt' },
       { argument: props.updatedAt, argumentName: 'updatedAt' },
     ]);
@@ -73,6 +92,14 @@ export class BalanceType extends AuditableEntity<BalanceTypeProps> {
       return Result.fail<BalanceType>('code must not be empty');
     }
 
-    return Result.ok<BalanceType>(new BalanceType({ ...props, code }, id));
+    if (!Array.isArray(props.allowedUomIds)) {
+      return Result.fail<BalanceType>('allowedUomIds must be an array');
+    }
+    // A UOM tagged twice is the same tag — collapse rather than reject.
+    const allowedUomIds = [...new Set(props.allowedUomIds.filter(Boolean))];
+
+    return Result.ok<BalanceType>(
+      new BalanceType({ ...props, code, allowedUomIds }, id),
+    );
   }
 }

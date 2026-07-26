@@ -61,14 +61,27 @@ export class CreateWalletUseCase
   async execute(dto: CreateWalletDTO): Promise<WalletResponse<string>> {
     try {
       // Referential checks — the FKs must point at live rows.
-      if (!(await this.walletTypeRepo.exists(dto.walletTypeId))) {
+      const walletType = await this.walletTypeRepo.findById(dto.walletTypeId);
+      if (!walletType) {
         return left(new BaseErrors.NotFoundError('Wallet type not found'));
-      }
-      if (!(await this.balanceTypeRepo.exists(dto.balanceTypeId))) {
-        return left(new BaseErrors.NotFoundError('Balance type not found'));
       }
       if (!(await this.uomRepo.exists(dto.uomId))) {
         return left(new BaseErrors.NotFoundError('UOM not found'));
+      }
+
+      // Not every UOM is meaningful for every balance type — the wallet type
+      // supplies the balance type, which in turn constrains the UOM. An
+      // untagged balance type is unrestricted.
+      const uomAllowed = await this.balanceTypeRepo.isUomAllowed(
+        walletType.balanceTypeId,
+        dto.uomId,
+      );
+      if (!uomAllowed) {
+        return left(
+          new BaseErrors.BusinessRuleError(
+            "This UOM is not allowed for the wallet type's balance type",
+          ),
+        );
       }
       if (!(await this.ownerTypeRepo.exists(dto.ownerTypeId))) {
         return left(new BaseErrors.NotFoundError('Owner type not found'));
@@ -90,7 +103,6 @@ export class CreateWalletUseCase
       const orError = Wallet.create({
         code,
         walletTypeId: dto.walletTypeId,
-        balanceTypeId: dto.balanceTypeId,
         uomId: dto.uomId,
         ownerTypeId: dto.ownerTypeId,
         ownerId: dto.ownerId,
@@ -185,7 +197,6 @@ export class UpdateWalletUseCase
         {
           code: existing.code,
           walletTypeId: existing.walletTypeId,
-          balanceTypeId: existing.balanceTypeId,
           uomId: existing.uomId,
           ownerTypeId: existing.ownerTypeId,
           ownerId: existing.ownerId,

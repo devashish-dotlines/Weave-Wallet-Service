@@ -14,6 +14,7 @@ export class WalletTypeMap extends Mapper<WalletType> {
       name: w.name,
       description: w.description ?? null,
       category: w.category,
+      balanceTypeId: w.balanceTypeId,
       overdraftAllowed: w.overdraftAllowed,
       overdraftLimit: w.overdraftLimit ?? null,
       allowTransfersOut: w.allowTransfersOut,
@@ -39,6 +40,7 @@ export class WalletTypeMap extends Mapper<WalletType> {
         name: raw.name,
         description: raw.description ?? undefined,
         category: raw.category as WalletCategory,
+        balanceTypeId: raw.balanceTypeId,
         overdraftAllowed: raw.overdraftAllowed,
         overdraftLimit:
           raw.overdraftLimit === null || raw.overdraftLimit === undefined
@@ -72,6 +74,7 @@ export class WalletTypeMap extends Mapper<WalletType> {
       name: w.name,
       description: w.description,
       category: w.category,
+      balanceTypeId: w.balanceTypeId,
       overdraftAllowed: w.overdraftAllowed,
       overdraftLimit: w.overdraftLimit,
       allowTransfersOut: w.allowTransfersOut,

@@ -4,6 +4,7 @@ export interface CreateWalletTypeDTO {
   name: string;
   description?: string;
   category: WalletCategory;
+  balanceTypeId: string;
   overdraftAllowed?: boolean;
   overdraftLimit?: number;
   allowTransfersOut?: boolean;
@@ -19,6 +20,7 @@ export interface UpdateWalletTypeDTO {
   name?: string;
   description?: string;
   category?: WalletCategory;
+  balanceTypeId?: string;
   overdraftAllowed?: boolean;
   overdraftLimit?: number;
   allowTransfersOut?: boolean;
@@ -34,6 +36,7 @@ export interface WalletTypeDTO {
   name: string;
   description?: string;
   category: WalletCategory;
+  balanceTypeId: string;
   overdraftAllowed: boolean;
   overdraftLimit?: number;
   allowTransfersOut: boolean;

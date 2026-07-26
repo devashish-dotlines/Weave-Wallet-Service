@@ -7,6 +7,8 @@ import { WalletTypeRepo } from './walletTypeRepo';
 import { WalletRepo } from './walletRepo';
 import { WalletTransactionRepo } from './walletTransactionRepo';
 import { RegisteredServiceRepo } from './registeredServiceRepo';
+import { UsageDimensionRepo } from './usageDimensionRepo';
+import { WalletUsageRestrictionRepo } from './walletUsageRestrictionRepo';
 
 /**
  * Manually-instantiated repo singletons for the Wallet module (no DI container).
@@ -20,6 +22,8 @@ export const walletTypeRepo = new WalletTypeRepo(models);
 export const walletRepo = new WalletRepo(models);
 export const walletTransactionRepo = new WalletTransactionRepo(models);
 export const registeredServiceRepo = new RegisteredServiceRepo(models);
+export const usageDimensionRepo = new UsageDimensionRepo(models);
+export const walletUsageRestrictionRepo = new WalletUsageRestrictionRepo(models);
 
 // DB-backed service-to-service auth: resolve the calling service from its
 // presented API key against the registered_service table (active + non-voided) —

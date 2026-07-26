@@ -6,35 +6,35 @@ import {
   DataType,
   IsUUID,
   PrimaryKey,
-  HasMany,
+  ForeignKey,
 } from 'sequelize-typescript';
-import { BalanceTypeUom } from './balanceTypeUom';
+import { BalanceType } from './balanceType';
+import { Uom } from './uom';
 
-@Table({ tableName: 'wlt_balance_type', underscored: true, timestamps: false })
-export class BalanceType extends Model<BalanceType> {
+/**
+ * Link table tagging which UOMs a balance type may be denominated in — not every
+ * UOM is meaningful for every balance type (e.g. CASH in BDT/USD, POINTS in PTS).
+ * A balance type with no live rows here is unrestricted (any UOM allowed).
+ */
+@Table({
+  tableName: 'wlt_balance_type_uom',
+  underscored: true,
+  timestamps: false,
+})
+export class BalanceTypeUom extends Model<BalanceTypeUom> {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
   id!: string;
 
-  @Column
-  name!: string;
+  @ForeignKey(() => BalanceType)
+  @Column(DataType.UUID)
+  balanceTypeId!: string;
 
-  // Short code, stored upper-cased, unique.
-  @Column({ type: DataType.STRING(32), unique: true })
-  code!: string;
-
-  @Column({ type: DataType.STRING, allowNull: true })
-  description!: string | null;
-
-  @Default(true)
-  @Column
-  isActive!: boolean;
-
-  // Tagged allowed UOMs (link rows). Empty ⇒ unrestricted.
-  @HasMany(() => BalanceTypeUom)
-  allowedUoms!: BalanceTypeUom[];
+  @ForeignKey(() => Uom)
+  @Column(DataType.UUID)
+  uomId!: string;
 
   @Default(false)
   @Column

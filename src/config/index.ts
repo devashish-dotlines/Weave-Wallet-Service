@@ -76,6 +76,14 @@ const envSchema = z.object({
   // Per-entity workflowType id (registered onto workflowEntities at boot).
   WALLET_TYPE_ID: z.string().min(1).optional(),
 
+  // Usage restrictions (what a wallet's balance may be spent on).
+  //   off     — restrictions are stored and displayed, never checked (default).
+  //   shadow  — checked and the would-be rejection is logged, but the spend proceeds.
+  //   enforce — a spend that breaches a restriction is rejected.
+  // Ships 'off': a restricted dimension missing from the usage context fails
+  // CLOSED, so enforcing before every caller sends context would reject them all.
+  USAGE_RESTRICTION_MODE: z.enum(['off', 'shadow', 'enforce']).optional(),
+
   // gRPC inbound server (EntityStatus push from the engine).
   GRPC_PORT: z
     .string()
@@ -167,6 +175,9 @@ export const config = {
         : 10000,
     // Per-entity workflowType ids (registered onto workflowEntities at boot).
     walletTypeId: env.WALLET_TYPE_ID ?? '',
+  },
+  usageRestriction: {
+    mode: env.USAGE_RESTRICTION_MODE ?? 'off',
   },
   grpc: {
     port: typeof env.GRPC_PORT === 'number' ? env.GRPC_PORT : 50072,
