@@ -143,12 +143,30 @@ const WALLET_TYPES: WalletTypeSeed[] = [
     allowTransfersOut: false,
     allowWithdrawals: true,
   },
+  {
+    name: 'Partner Wallet',
+    description:
+      'Commission wallet for a partner organization, held by the organization rather than a person',
+    category: 'prepaid',
+    balanceTypeCode: 'CASH',
+    // Same payout rules as the individual wallet for now. A separate type so the
+    // two can diverge (limits, KYC, transfers) without affecting each other.
+    allowTransfersOut: false,
+    allowWithdrawals: true,
+  },
 ];
 
 const OWNER_TYPES: OwnerTypeSeed[] = [
   { code: 'CUSTOMER', name: 'Customer', description: 'Customer-owned wallet' },
   { code: 'PARTNER', name: 'Partner', description: 'Partner-owned wallet' },
   { code: 'USER', name: 'User', description: 'Internal user-owned wallet' },
+  // owner_id is an accounts organization id. A partner organization's wallet
+  // uses this; a partner with no organization of its own is owned as USER.
+  {
+    code: 'ORGANIZATION',
+    name: 'Organization',
+    description: 'Organization-owned wallet (owner id is an accounts organization id)',
+  },
 ];
 
 async function seedBalanceTypes(): Promise<void> {
