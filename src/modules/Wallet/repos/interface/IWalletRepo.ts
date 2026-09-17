@@ -13,6 +13,13 @@ export interface IWalletRepo {
   exists(id: string): Promise<boolean>;
   findById(id: string): Promise<Wallet | null>;
   findByCode(code: string): Promise<Wallet | null>;
+  /**
+   * Look a wallet up by its caller-supplied provisioning handle. This is the
+   * read that makes ProvisionWallet idempotent, so it deliberately ignores
+   * `voided`: a soft-deleted wallet still holds the unique `external_ref`, and
+   * silently minting a second one would double-credit the customer.
+   */
+  findByExternalRef(externalRef: string): Promise<Wallet | null>;
   list(): Promise<Wallet[]>;
   create(domainObject: Wallet): Promise<string | null>;
   update(domainObject: Wallet): Promise<string | null>;

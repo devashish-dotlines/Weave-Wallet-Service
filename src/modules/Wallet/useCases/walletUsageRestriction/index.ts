@@ -12,7 +12,9 @@ import {
   ListWalletUsageRestrictionsController,
 } from './walletUsageRestriction.controller';
 
-const setWalletUsageRestrictionsUseCase = new SetWalletUsageRestrictionsUseCase(
+// Exported so the provisioning use case reuses this exact instance rather than
+// re-wiring an identical one.
+export const setWalletUsageRestrictionsUseCase = new SetWalletUsageRestrictionsUseCase(
   walletUsageRestrictionRepo,
   walletRepo,
   usageDimensionRepo,

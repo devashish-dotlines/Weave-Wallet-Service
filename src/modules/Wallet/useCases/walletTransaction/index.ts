@@ -21,7 +21,9 @@ import {
   GetWalletTransactionController,
 } from './walletTransaction.controller';
 
-const creditWalletUseCase = new CreditWalletUseCase(
+// Exported so the provisioning use case funds a new wallet through this exact
+// instance rather than re-wiring an identical one.
+export const creditWalletUseCase = new CreditWalletUseCase(
   walletRepo,
   walletTransactionRepo,
 );

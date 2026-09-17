@@ -106,6 +106,7 @@ export class CreateWalletUseCase
         uomId: dto.uomId,
         ownerTypeId: dto.ownerTypeId,
         ownerId: dto.ownerId,
+        externalRef: dto.externalRef,
         parentWalletId: dto.parentWalletId,
         displayName: dto.displayName,
         balance: 0,

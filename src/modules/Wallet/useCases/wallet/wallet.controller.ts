@@ -17,6 +17,10 @@ export class CreateWalletController extends BaseController {
   async executeImpl(req: express.Request, res: express.Response): Promise<any> {
     const dto: CreateWalletDTO = {
       ...req.body,
+      // Not client-suppliable: `externalRef` is a service-to-service idempotency
+      // handle, and letting a caller claim one would let them collide with (or
+      // squat on) a provisioned wallet's identity.
+      externalRef: undefined,
       requestedBy: req.user?.id,
       roleIds: req.user?.roles ?? [],
     };

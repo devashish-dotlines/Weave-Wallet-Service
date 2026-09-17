@@ -24,6 +24,12 @@ export interface WalletProps extends BaseEntityProps {
   ownerTypeId: string;
   /** Opaque owner id from the owning service — not resolved cross-service. */
   ownerId: string;
+  /**
+   * Caller-supplied idempotency handle for service-to-service provisioning.
+   * Undefined for wallets created through the UI. Unique when present, which is
+   * what makes ProvisionWallet safe to replay.
+   */
+  externalRef?: string;
   parentWalletId?: string;
   displayName?: string;
   /** Cached, ledger-derived balance (FR-WL-3). Not moved by transactions this pass. */
@@ -63,6 +69,9 @@ export class Wallet extends AuditableEntity<WalletProps> {
   }
   get ownerId(): string {
     return this.props.ownerId;
+  }
+  get externalRef(): string | undefined {
+    return this.props.externalRef;
   }
   get parentWalletId(): string | undefined {
     return this.props.parentWalletId;

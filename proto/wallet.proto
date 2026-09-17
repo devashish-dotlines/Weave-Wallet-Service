@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package wallet.v1;
+
+// Inbound provisioning API of the Wallet service. Other services (subscription
+// billing, …) call this to create wallets on a customer's behalf WITHOUT going
+// through APISix — they hold no gateway JWT. Callers authenticate with a
+// per-consumer service API key supplied as `x-api-key` metadata, validated
+// against this service's registered_service table (NOT the gateway JWT).
+// Keep this file byte-identical in every consumer.
+service WalletProvisioningService {
+  rpc ProvisionWallet(ProvisionWalletRequest) returns (ProvisionWalletResponse);
+}
+
+// One restriction rule to apply to the provisioned wallet. The dimension is
+// named by its stable `key` rather than its id: usage dimensions are seeded
+// data whose ids differ per environment, and a caller holding an id would break
+// on every fresh database.
+message UsageRestrictionInput {
+  string dimension_key = 1;
+  string operator = 2;             // in | not_in | eq | neq
+  repeated string value_keys = 3;
+}
+
+// Creating a wallet, restricting it and funding it are ONE unit of work. Split
+// across three RPCs, a partial failure would leave an unusable half-provisioned
+// wallet that no retry could repair — `external_ref` would already be taken.
+message ProvisionWalletRequest {
+  // Caller's idempotency handle, unique per wallet (e.g. `sub:<id>:line:<id>`).
+  // A repeat returns the original wallet instead of creating a second one.
+  string external_ref = 1;
+  string wallet_type_id = 2;
+  string uom_id = 3;
+  string owner_type_code = 4;      // CUSTOMER | PARTNER | USER — resolved to an id here
+  string owner_id = 5;             // opaque; the owning service's own customer id
+  string display_name = 6;
+  int64  expires_at = 7;           // unix seconds; 0 ⇒ never expires
+  // Decimal string to preserve DECIMAL precision. Empty or "0" ⇒ no credit.
+  string initial_credit = 8;
+  // Applied at-most-once. Required whenever initial_credit is set, so a retry
+  // funds the wallet exactly once.
+  string credit_idempotency_key = 9;
+  repeated UsageRestrictionInput restrictions = 10;
+  string requested_by = 11;
+}
+
+message ProvisionWalletResponse {
+  string wallet_id = 1;
+  bool created = 2;                // false ⇒ external_ref already existed
+  bool credited = 3;               // false ⇒ no credit asked for, or it was a replay
+}

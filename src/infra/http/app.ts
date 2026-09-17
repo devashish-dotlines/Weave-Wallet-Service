@@ -28,6 +28,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Request logger: prints every endpoint called, with status and duration.
+app.use((req, res, next) => {
+  const startedAt = process.hrtime.bigint();
+  res.on('finish', () => {
+    const ms = Number(process.hrtime.bigint() - startedAt) / 1e6;
+    console.log(
+      `[API] ${req.method} ${req.originalUrl} -> ${res.statusCode} ${ms.toFixed(1)}ms`,
+    );
+  });
+  next();
+});
+
 app.use('/api', v1Router);
 app.use('/media', express.static('media'));
 app.use('/public/assets', express.static('public/assets'));

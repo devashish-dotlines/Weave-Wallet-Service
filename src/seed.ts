@@ -11,7 +11,9 @@ import {
   ownerTypeRepo,
   usageDimensionRepo,
 } from './modules/Wallet/repos';
+import { walletTypeRepo } from './modules/Wallet/repos';
 import { BalanceType } from './modules/Wallet/domain/balanceType';
+import { WalletType, WalletCategory } from './modules/Wallet/domain/walletType';
 import { Uom } from './modules/Wallet/domain/uom';
 import { OwnerType } from './modules/Wallet/domain/ownerType';
 import { UsageDimension } from './modules/Wallet/domain/usageDimension';
@@ -114,6 +116,35 @@ const USAGE_DIMENSIONS: UsageDimensionSeed[] = [
   },
 ];
 
+interface WalletTypeSeed {
+  name: string;
+  description?: string;
+  category: WalletCategory;
+  /** Resolved to an id at seed time; the balance type must already be seeded. */
+  balanceTypeCode: string;
+  allowTransfersOut: boolean;
+  allowWithdrawals: boolean;
+}
+
+/**
+ * Wallet types the rest of the platform names by configuration rather than by
+ * id. `wlt_wallet_type` has no `code` column, so the NAME is the natural key —
+ * renaming one here makes the seeder create a second row instead of skipping.
+ */
+const WALLET_TYPES: WalletTypeSeed[] = [
+  {
+    name: 'Individual Partner Wallet',
+    description:
+      'Commission wallet for a partner who has no organization of their own (a freelance sales person)',
+    category: 'prepaid',
+    balanceTypeCode: 'CASH',
+    // Commission is earned to be paid out, so withdrawals are open; partner-to-
+    // partner transfers are not part of the flow.
+    allowTransfersOut: false,
+    allowWithdrawals: true,
+  },
+];
+
 const OWNER_TYPES: OwnerTypeSeed[] = [
   { code: 'CUSTOMER', name: 'Customer', description: 'Customer-owned wallet' },
   { code: 'PARTNER', name: 'Partner', description: 'Partner-owned wallet' },
@@ -177,6 +208,44 @@ async function seedUoms(): Promise<void> {
   }
 }
 
+async function seedWalletTypes(): Promise<void> {
+  for (const w of WALLET_TYPES) {
+    if (await walletTypeRepo.findByName(w.name)) {
+      console.log(`[seed] wallet type "${w.name}" already present — skip`);
+      continue;
+    }
+
+    const balanceType = await balanceTypeRepo.findByCode(w.balanceTypeCode);
+    if (!balanceType) {
+      throw new Error(
+        `seed wallet type "${w.name}": unknown balance type ${w.balanceTypeCode}`,
+      );
+    }
+
+    const ts = now();
+    const created = WalletType.create({
+      name: w.name,
+      description: w.description,
+      category: w.category,
+      balanceTypeId: balanceType.id.toString(),
+      overdraftAllowed: false,
+      allowTransfersOut: w.allowTransfersOut,
+      allowWithdrawals: w.allowWithdrawals,
+      requiredKycLevel: 0,
+      isActive: true,
+      createdBy: SYSTEM_ACTOR,
+      updatedBy: SYSTEM_ACTOR,
+      createdAt: ts,
+      updatedAt: ts,
+    });
+    if (created.isFailure) {
+      throw new Error(`seed wallet type "${w.name}": ${created.error}`);
+    }
+    await walletTypeRepo.create(created.getValue());
+    console.log(`[seed] wallet type "${w.name}" created`);
+  }
+}
+
 async function seedOwnerTypes(): Promise<void> {
   for (const o of OWNER_TYPES) {
     if (await ownerTypeRepo.findByCode(o.code)) {
@@ -235,6 +304,8 @@ async function seedUsageDimensions(): Promise<void> {
     // UOMs before balance types — the balance-type tags resolve UOMs by code.
     await seedUoms();
     await seedBalanceTypes();
+    // Balance types before wallet types — each wallet type resolves one by code.
+    await seedWalletTypes();
     await seedOwnerTypes();
     await seedUsageDimensions();
     console.log('[seed] done.');

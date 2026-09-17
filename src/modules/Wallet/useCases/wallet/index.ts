@@ -4,7 +4,11 @@ import {
   balanceTypeRepo,
   uomRepo,
   ownerTypeRepo,
+  usageDimensionRepo,
 } from '../../repos';
+import { setWalletUsageRestrictionsUseCase } from '../walletUsageRestriction';
+import { creditWalletUseCase } from '../walletTransaction';
+import { ProvisionWalletUseCase } from './provisionWallet.use-case';
 import { config } from '../../../../config';
 import { workflowIntegration } from '../../../../infra/workflow';
 import { WALLET_ENTITY } from '../../infra/workflow/registerEntities';
@@ -53,6 +57,17 @@ const createWalletUseCase = new CreateWalletUseCase(
   ownerTypeRepo,
   workflowInitiator,
 );
+// Service-to-service provisioning. Shared with the gRPC handler; it has no HTTP
+// controller on purpose — the panel creates wallets through the routes above.
+export const provisionWalletUseCase = new ProvisionWalletUseCase(
+  walletRepo,
+  ownerTypeRepo,
+  usageDimensionRepo,
+  createWalletUseCase,
+  setWalletUsageRestrictionsUseCase,
+  creditWalletUseCase,
+);
+
 const updateWalletUseCase = new UpdateWalletUseCase(walletRepo);
 const deleteWalletUseCase = new DeleteWalletUseCase(walletRepo);
 const getWalletUseCase = new GetWalletUseCase(walletRepo);

@@ -55,3 +55,6 @@ Thumbs.db
 
 /public
 install.log
+
+# Next.js build output
+.next/

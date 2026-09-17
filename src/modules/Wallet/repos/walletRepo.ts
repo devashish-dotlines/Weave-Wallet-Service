@@ -33,6 +33,15 @@ export class WalletRepo extends BaseRepo implements IWalletRepo {
     return instance ? WalletMap.toDomain(instance) : null;
   }
 
+  public async findByExternalRef(externalRef: string): Promise<Wallet | null> {
+    const q = this.createBaseQuery();
+    q.where['externalRef'] = externalRef;
+    // No `voided` filter — see IWalletRepo. The unique index covers voided rows
+    // too, so treating one as absent would just fail the insert on retry.
+    const instance = await this.baseModel.findOne(q);
+    return instance ? WalletMap.toDomain(instance) : null;
+  }
+
   public async list(): Promise<Wallet[]> {
     const q = this.createBaseQuery();
     q.where['voided'] = false;

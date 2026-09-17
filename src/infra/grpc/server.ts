@@ -13,6 +13,7 @@ import {
   listEntityValues,
   entityValuesExist,
 } from '../../modules/Wallet/infra/grpc/entityQuery.handlers';
+import { provisionWallet } from '../../modules/Wallet/infra/grpc/walletProvisioning.handlers';
 
 // proto-loader options shared by every service definition we host.
 const LOADER_OPTS = {
@@ -44,6 +45,12 @@ const EntityQueryService = loadService(
   'proto/entityQuery.proto',
   'entityquery.v1.EntityQueryService',
 );
+// Inbound provisioning writes. Other services create a customer's wallets here
+// because they hold a service API key, not the gateway JWT the HTTP routes need.
+const WalletProvisioningService = loadService(
+  'proto/wallet.proto',
+  'wallet.v1.WalletProvisioningService',
+);
 
 export function buildGrpcServer(): Server {
   const server = new Server();
@@ -55,6 +62,9 @@ export function buildGrpcServer(): Server {
     ListEntitySources: withModuleAuth(listEntitySources as any),
     ListEntityValues: withModuleAuth(listEntityValues as any),
     EntityValuesExist: withModuleAuth(entityValuesExist as any),
+  });
+  server.addService(WalletProvisioningService.service, {
+    ProvisionWallet: withModuleAuth(provisionWallet as any),
   });
   return server;
 }
@@ -68,7 +78,7 @@ export function startGrpcServer(): void {
       process.exit(1);
     }
     console.log(
-      `[grpc] EntityStatusService + EntityQueryService listening on ${config.grpc.bindAddress}:${port}`,
+      `[grpc] EntityStatusService + EntityQueryService + WalletProvisioningService listening on ${config.grpc.bindAddress}:${port}`,
     );
   });
 }

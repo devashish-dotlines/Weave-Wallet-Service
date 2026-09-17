@@ -14,7 +14,22 @@ import { Uom } from './uom';
 import { OwnerType } from './ownerType';
 import { WalletUsageRestriction } from './walletUsageRestriction';
 
-@Table({ tableName: 'wlt_wallet', underscored: true, timestamps: false })
+@Table({
+  tableName: 'wlt_wallet',
+  underscored: true,
+  timestamps: false,
+  indexes: [
+    // Idempotency handle for service-to-service provisioning (ProvisionWallet).
+    // Wallets created through the UI leave it NULL, and Postgres treats NULLs as
+    // distinct — which is exactly what lets one unique index guard the
+    // provisioned wallets without constraining the hand-created ones.
+    {
+      name: 'uq_wlt_wallet_external_ref',
+      unique: true,
+      fields: ['external_ref'],
+    },
+  ],
+})
 export class Wallet extends Model<Wallet> {
   @IsUUID(4)
   @PrimaryKey
@@ -42,6 +57,11 @@ export class Wallet extends Model<Wallet> {
 
   @Column({ type: DataType.STRING })
   ownerId!: string;
+
+  // Caller-supplied idempotency handle, e.g. `sub:<id>:line:<id>`. NULL for
+  // wallets created through the UI. See the unique index on the @Table above.
+  @Column({ type: DataType.STRING(191), allowNull: true })
+  externalRef!: string | null;
 
   // Optional hierarchical parent (self-reference).
   @ForeignKey(() => Wallet)
