@@ -16,6 +16,19 @@ package accounts.v1;
 
 service EntityStatusService {
   rpc SyncEntityStatus(SyncEntityStatusRequest) returns (SyncEntityStatusResponse);
+  // Engine -> owning-service action dispatch. When a transition action rule with
+  // a gRPC transport (actionType 'grpc') fires, the engine calls this instead of
+  // an HTTP webhook, reusing THIS channel + `x-api-key` (no separate secret). The
+  // owner runs the action identified by `action_slug` (e.g. generate an invoice)
+  // and returns ok=true only when it truly succeeded — the engine then advances
+  // the instance to the rule's onSuccessToStatusId. A gRPC error = retryable
+  // failure (engine retries, no advance); ok=false = handled-but-not-done.
+  rpc DispatchAction(DispatchActionRequest) returns (DispatchActionResponse);
+  // Engine -> owning-service action discovery. Returns the gRPC actions this
+  // service exposes (its action registry), so the admin panel can offer a
+  // predefined "process" dropdown when building a gRPC ActionDefinition instead
+  // of a free-text slug. Read-only; authenticated with the same `x-api-key`.
+  rpc ListActions(ListActionsRequest) returns (ListActionsResponse);
 }
 
 message SyncEntityStatusRequest {
@@ -30,4 +43,29 @@ message SyncEntityStatusRequest {
 
 message SyncEntityStatusResponse {
   bool ok = 1;
+}
+
+message DispatchActionRequest {
+  string action_slug = 1;  // which action the owner should run (ActionDefinition slug)
+  string entity_type = 2;
+  string entity_id = 3;
+  string payload = 4;      // JSON string built from the action's payloadTemplate
+  string instance_id = 5;
+}
+
+message DispatchActionResponse {
+  bool ok = 1;         // true = action truly succeeded (engine may advance status)
+  string message = 2;  // diagnostic (e.g. why ok=false)
+}
+
+message ListActionsRequest {}
+
+message ActionInfo {
+  string slug = 1;         // dispatch key (an ActionDefinition slug must match this)
+  string label = 2;        // human-friendly name for the dropdown
+  string description = 3;  // optional longer help text
+}
+
+message ListActionsResponse {
+  repeated ActionInfo actions = 1;
 }

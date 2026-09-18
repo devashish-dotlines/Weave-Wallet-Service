@@ -14,6 +14,7 @@ import {
   entityValuesExist,
 } from '../../modules/Wallet/infra/grpc/entityQuery.handlers';
 import { provisionWallet } from '../../modules/Wallet/infra/grpc/walletProvisioning.handlers';
+import { dispatchAction, listActions } from './actionDispatch.handlers';
 
 // proto-loader options shared by every service definition we host.
 const LOADER_OPTS = {
@@ -57,6 +58,10 @@ export function buildGrpcServer(): Server {
   // Every method is wrapped with the API-key auth gate (service-to-service).
   server.addService(EntityStatusService.service, {
     SyncEntityStatus: withModuleAuth(syncEntityStatus as any),
+    // Engine -> here: run a registered action on a transition (e.g. credit an
+    // approved top-up), and let the admin panel discover the actions we expose.
+    DispatchAction: withModuleAuth(dispatchAction as any),
+    ListActions: withModuleAuth(listActions as any),
   });
   server.addService(EntityQueryService.service, {
     ListEntitySources: withModuleAuth(listEntitySources as any),
