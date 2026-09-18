@@ -10,19 +10,21 @@ export interface BalanceTypeProps extends BaseEntityProps {
   code: string;
   description?: string;
   isActive: boolean;
+  /** The kind of unit this balance holds (CURRENCY, POINTS, TIME, DATA …). */
+  categoryId: string;
   /**
-   * UOMs this balance type may be denominated in. An **empty list means
-   * unrestricted** — any UOM is accepted — which is also what pre-existing rows
-   * (tagged before this field existed) degrade to.
+   * Units of that category the balance may be denominated in — acc_currency
+   * ids for CURRENCY, wlt_uom ids for LOCAL categories. An **empty list means
+   * any unit of the category**. That every id belongs to the category is
+   * checked by the use case (it needs the UnitRegistry).
    */
-  allowedUomIds: string[];
+  allowedUnitIds: string[];
 }
 
 /**
- * A balance-type lookup — the nature of the value a wallet holds (cash, loyalty
- * points, reward credits, …). A plain reference table; the only invariant is a
- * non-empty name/code. Code uniqueness is a cross-record rule enforced in the
- * use-case, not here.
+ * The nature of the value a wallet holds (cash, loyalty points, talk time …):
+ * one unit category plus the units of it that are allowed. Code uniqueness is
+ * a cross-record rule enforced in the use case.
  */
 export class BalanceType extends AuditableEntity<BalanceTypeProps> {
   get id(): UniqueEntityID {
@@ -40,14 +42,21 @@ export class BalanceType extends AuditableEntity<BalanceTypeProps> {
   get isActive(): boolean {
     return this.props.isActive;
   }
-  get allowedUomIds(): string[] {
-    return this.props.allowedUomIds;
+  get categoryId(): string {
+    return this.props.categoryId;
+  }
+  get allowedUnitIds(): string[] {
+    return this.props.allowedUnitIds;
   }
 
-  /** Empty tag list ⇒ unrestricted, so every UOM passes. */
-  public allowsUom(uomId: string): boolean {
-    if (this.props.allowedUomIds.length === 0) return true;
-    return this.props.allowedUomIds.includes(uomId);
+  /**
+   * A unit is allowed when it is of this balance's category and either the
+   * list is empty (any unit of the category) or it is on the list.
+   */
+  public allowsUnit(categoryId: string, unitId: string): boolean {
+    if (categoryId !== this.props.categoryId) return false;
+    if (this.props.allowedUnitIds.length === 0) return true;
+    return this.props.allowedUnitIds.includes(unitId);
   }
 
   set name(value: string) {
@@ -59,8 +68,8 @@ export class BalanceType extends AuditableEntity<BalanceTypeProps> {
   set isActive(value: boolean) {
     this.props.isActive = value;
   }
-  set allowedUomIds(value: string[]) {
-    this.props.allowedUomIds = value;
+  set allowedUnitIds(value: string[]) {
+    this.props.allowedUnitIds = value;
   }
 
   private constructor(props: BalanceTypeProps, id?: UniqueEntityID) {
@@ -74,6 +83,7 @@ export class BalanceType extends AuditableEntity<BalanceTypeProps> {
     const guard = Guard.againstNullOrUndefinedOrEmptyBulk([
       { argument: props.name, argumentName: 'name' },
       { argument: props.code, argumentName: 'code' },
+      { argument: props.categoryId, argumentName: 'categoryId' },
       { argument: props.createdBy, argumentName: 'createdBy' },
       { argument: props.updatedBy, argumentName: 'updatedBy' },
     ]);
@@ -81,7 +91,7 @@ export class BalanceType extends AuditableEntity<BalanceTypeProps> {
 
     const nn = Guard.againstNullOrUndefinedBulk([
       { argument: props.isActive, argumentName: 'isActive' },
-      { argument: props.allowedUomIds, argumentName: 'allowedUomIds' },
+      { argument: props.allowedUnitIds, argumentName: 'allowedUnitIds' },
       { argument: props.createdAt, argumentName: 'createdAt' },
       { argument: props.updatedAt, argumentName: 'updatedAt' },
     ]);
@@ -92,14 +102,14 @@ export class BalanceType extends AuditableEntity<BalanceTypeProps> {
       return Result.fail<BalanceType>('code must not be empty');
     }
 
-    if (!Array.isArray(props.allowedUomIds)) {
-      return Result.fail<BalanceType>('allowedUomIds must be an array');
+    if (!Array.isArray(props.allowedUnitIds)) {
+      return Result.fail<BalanceType>('allowedUnitIds must be an array');
     }
-    // A UOM tagged twice is the same tag — collapse rather than reject.
-    const allowedUomIds = [...new Set(props.allowedUomIds.filter(Boolean))];
+    // A unit tagged twice is the same tag — collapse rather than reject.
+    const allowedUnitIds = [...new Set(props.allowedUnitIds.filter(Boolean))];
 
     return Result.ok<BalanceType>(
-      new BalanceType({ ...props, code, allowedUomIds }, id),
+      new BalanceType({ ...props, code, allowedUnitIds }, id),
     );
   }
 }

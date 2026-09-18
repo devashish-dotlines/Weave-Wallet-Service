@@ -16,6 +16,10 @@ export const PERMISSIONS = {
   UOM_READ: 'wallet.uom.read',
   UOM_UPDATE: 'wallet.uom.update',
   UOM_DELETE: 'wallet.uom.delete',
+  UOM_CATEGORY_READ: 'wallet.uom-category.read',
+  UOM_CATEGORY_UPDATE: 'wallet.uom-category.update',
+  UOM_RATE_READ: 'wallet.uom-rate.read',
+  UOM_RATE_MANAGE: 'wallet.uom-rate.manage',
 
   OWNER_TYPE_CREATE: 'wallet.owner-type.create',
   OWNER_TYPE_READ: 'wallet.owner-type.read',
@@ -47,6 +51,19 @@ export const PERMISSIONS = {
   // Wallet workflow (FR-WL-6 / FR-WF-1), used by the generic /v1/workflow router.
   WALLET_WORKFLOW_READ: 'wallet.wallet.workflow.read',
   WALLET_WORKFLOW_TRANSITION: 'wallet.wallet.workflow.transition',
+
+  // Top-up requests — review side (manual bank deposits awaiting approval).
+  TOPUP_REQUEST_READ: 'wallet.topup-request.read',
+  // Staff raising a request on any wallet on its owner's behalf. Still goes to
+  // approval, and maker-checker stops the same person approving it.
+  TOPUP_REQUEST_CREATE: 'wallet.topup-request.create',
+  TOPUP_REQUEST_REVIEW: 'wallet.topup-request.review',
+  TOPUP_REQUEST_WORKFLOW_READ: 'wallet.topup-request.workflow.read',
+  TOPUP_REQUEST_ATTACHMENT_READ: 'wallet.topup-request.attachment.read',
+
+  // Self-service on wallets the caller OWNS (ownership is checked separately).
+  SELF_TOPUP: 'wallet.self.topup',
+  SELF_TRANSFER: 'wallet.self.transfer',
 
   // Service registry — issue/list/revoke service-to-service API keys.
   SERVICE_MANAGE: 'wallet.service.manage',

@@ -26,7 +26,10 @@ export async function provisionWallet(
     const result = await provisionWalletUseCase.execute({
       externalRef: String(r.external_ref ?? ''),
       walletTypeId: String(r.wallet_type_id ?? ''),
-      uomId: String(r.uom_id ?? ''),
+      // proto3 strings default to '' — send undefined so the registry sees "not set".
+      unitCategoryId: r.unit_category_id ? String(r.unit_category_id) : undefined,
+      unitId: r.unit_id ? String(r.unit_id) : undefined,
+      uomId: r.uom_id ? String(r.uom_id) : undefined,
       ownerTypeCode: String(r.owner_type_code ?? ''),
       ownerId: String(r.owner_id ?? ''),
       displayName: r.display_name ? String(r.display_name) : undefined,

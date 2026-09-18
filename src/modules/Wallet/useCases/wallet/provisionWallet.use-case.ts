@@ -15,6 +15,8 @@ import { WalletResponse } from '../shared/response';
 import { CreateWalletUseCase } from './wallet.use-cases';
 import { SetWalletUsageRestrictionsUseCase } from '../walletUsageRestriction/walletUsageRestriction.use-cases';
 import { CreditWalletUseCase } from '../walletTransaction/walletTransaction.use-cases';
+import { IUnitRegistry } from '../../services/unitRegistry.service';
+import { sameUnit } from '../../domain/unitRef';
 
 /**
  * Create a wallet on another service's behalf, restrict it, and fund it — as one
@@ -52,6 +54,7 @@ export class ProvisionWalletUseCase
     private readonly createWallet: CreateWalletUseCase,
     private readonly setRestrictions: SetWalletUsageRestrictionsUseCase,
     private readonly creditWallet: CreditWalletUseCase,
+    private readonly units: IUnitRegistry,
   ) {}
 
   async execute(
@@ -70,6 +73,16 @@ export class ProvisionWalletUseCase
       let created = false;
 
       if (existing) {
+        // A replay must describe the same wallet. A different unit under the
+        // same externalRef is a caller bug, not a request to change currency.
+        const requested = await this.units.fromInput(dto);
+        if (requested && !sameUnit(requested, existing.unit)) {
+          return left(
+            new BaseErrors.ConflictError(
+              `Wallet for "${externalRef}" already exists in ${existing.unitCode}; a different unit was requested`,
+            ),
+          );
+        }
         walletId = existing.id.toString();
       } else {
         // The owner type is named by CODE, not id: these are seeded rows whose
@@ -93,6 +106,8 @@ export class ProvisionWalletUseCase
         // surface as a clean business-rule error, not a constraint violation.
         const createdOrError = await this.createWallet.execute({
           walletTypeId: dto.walletTypeId,
+          unitCategoryId: dto.unitCategoryId,
+          unitId: dto.unitId,
           uomId: dto.uomId,
           ownerTypeId: ownerType.id.toString(),
           ownerId: dto.ownerId,
@@ -152,6 +167,8 @@ export class ProvisionWalletUseCase
             ? `Provisioned allowance — ${dto.displayName}`
             : 'Provisioned allowance',
           idempotencyKey: dto.creditIdempotencyKey,
+          sourceType: 'PROVISION',
+          sourceRef: externalRef,
           requestedBy: dto.requestedBy,
         });
         if (creditOrError.isLeft()) return left(creditOrError.value);

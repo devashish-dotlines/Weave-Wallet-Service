@@ -14,6 +14,7 @@ export class BalanceTypeMap extends Mapper<BalanceType> {
       name: b.name,
       code: b.code,
       description: b.description ?? null,
+      categoryId: b.categoryId,
       isActive: b.isActive,
       voided: b.voided ?? false,
       createdBy: b.createdBy,
@@ -27,16 +28,16 @@ export class BalanceTypeMap extends Mapper<BalanceType> {
   }
 
   /**
-   * The tag list lives in `wlt_balance_type_uom`, so it arrives either as the
-   * eager-loaded `allowedUoms` rows or as a pre-resolved id array. Untagged
-   * (and pre-existing) rows read back as `[]` — unrestricted.
+   * The tag list lives in `wlt_balance_type_unit`, so it arrives either as the
+   * eager-loaded `allowedUnits` rows or as a pre-resolved id array. Untagged
+   * rows read back as `[]` — any unit of the category.
    */
-  private static readAllowedUomIds(raw: any): string[] {
-    if (Array.isArray(raw.allowedUomIds)) return raw.allowedUomIds;
-    if (Array.isArray(raw.allowedUoms)) {
-      return raw.allowedUoms
+  private static readAllowedUnitIds(raw: any): string[] {
+    if (Array.isArray(raw.allowedUnitIds)) return raw.allowedUnitIds;
+    if (Array.isArray(raw.allowedUnits)) {
+      return raw.allowedUnits
         .filter((link: any) => !link.voided)
-        .map((link: any) => link.uomId);
+        .map((link: any) => link.unitId);
     }
     return [];
   }
@@ -49,7 +50,8 @@ export class BalanceTypeMap extends Mapper<BalanceType> {
         code: raw.code,
         description: raw.description ?? undefined,
         isActive: raw.isActive,
-        allowedUomIds: BalanceTypeMap.readAllowedUomIds(raw),
+        categoryId: raw.categoryId,
+        allowedUnitIds: BalanceTypeMap.readAllowedUnitIds(raw),
         voided: raw.voided,
         createdBy: raw.createdBy,
         createdAt: Mapper.toDateRequired(raw.createdAt, 'createdAt', 'BalanceType'),
@@ -74,7 +76,8 @@ export class BalanceTypeMap extends Mapper<BalanceType> {
       code: b.code,
       description: b.description,
       isActive: b.isActive,
-      allowedUomIds: b.allowedUomIds,
+      categoryId: b.categoryId,
+      allowedUnitIds: b.allowedUnitIds,
     };
   }
 }

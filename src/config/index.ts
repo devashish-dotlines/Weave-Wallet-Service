@@ -75,6 +75,9 @@ const envSchema = z.object({
 
   // Per-entity workflowType id (registered onto workflowEntities at boot).
   WALLET_TYPE_ID: z.string().min(1).optional(),
+  // Approval workflow for manual bank-deposit top-up requests. Unset ⇒ requests
+  // can be drafted but not submitted (approval is mandatory).
+  TOPUP_REQUEST_TYPE_ID: z.string().min(1).optional(),
 
   // Usage restrictions (what a wallet's balance may be spent on).
   //   off     — restrictions are stored and displayed, never checked (default).
@@ -91,6 +94,94 @@ const envSchema = z.object({
     .or(z.number())
     .optional(),
   GRPC_BIND_ADDRESS: z.string().min(1).optional(),
+
+  // --- Object storage (top-up deposit slips) ---------------------------------
+  // Driver is chosen per installation: local disk for single-host installs,
+  // S3-compatible (AWS/MinIO/Ceph) when object storage is available.
+  STORAGE_DRIVER: z.enum(['local', 's3']).optional(),
+  STORAGE_MAX_FILE_BYTES: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+  STORAGE_ALLOWED_MIME: z.string().min(1).optional(),
+  // MUST NOT be `media` — app.ts serves it as a public static directory, which
+  // would make uploaded deposit slips world-readable.
+  STORAGE_LOCAL_ROOT: z.string().min(1).optional(),
+  STORAGE_S3_ENDPOINT: z.string().min(1).optional(),
+  STORAGE_S3_REGION: z.string().min(1).optional(),
+  STORAGE_S3_BUCKET: z.string().min(1).optional(),
+  STORAGE_S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  STORAGE_S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  STORAGE_S3_FORCE_PATH_STYLE: z.enum(['true', 'false']).optional(),
+  STORAGE_S3_PREFIX: z.string().optional(),
+
+  // --- Configuration service (outbound gRPC: ConfigurationQueryService) ------
+  // Source of top-up bank accounts and limits. Unset ⇒ top-up and self-transfer
+  // are unavailable (never silently unlimited).
+  CONFIG_GRPC_TARGET: z.string().min(1).optional(),
+  CONFIG_API_KEY: z.string().min(1).optional(),
+  CONFIG_GRPC_DEADLINE_MS: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+  CONFIG_CACHE_TTL_MS: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+
+  // --- Accounting (outbound gRPC: LedgerService) -----------------------------
+  ACCOUNTING_GRPC_TARGET: z.string().min(1).optional(),
+  ACCOUNTING_API_KEY: z.string().min(1).optional(),
+  ACCOUNTING_GRPC_DEADLINE_MS: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+  // Post a voucher for each wallet movement. Off by default; a movement never
+  // waits on or rolls back because of accounting.
+  WALLET_GL_POSTING_ENABLED: z.enum(['true', 'false']).optional(),
+  // GL reconciler: re-posts movements whose inline posting failed. Rows younger
+  // than the min age are left to the inline post.
+  GL_RECONCILE_INTERVAL_SECONDS: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+  GL_RECONCILE_BATCH_SIZE: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+  GL_RECONCILE_RETRY_AFTER_SECONDS: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+  GL_RECONCILE_MIN_AGE_SECONDS: z
+    .string()
+    .transform((v) => parseInt(v, 10))
+    .or(z.number())
+    .optional(),
+}).superRefine((val, ctx) => {
+  if (val.STORAGE_DRIVER !== 's3') return;
+  const required = [
+    'STORAGE_S3_REGION',
+    'STORAGE_S3_BUCKET',
+    'STORAGE_S3_ACCESS_KEY_ID',
+    'STORAGE_S3_SECRET_ACCESS_KEY',
+  ] as const;
+  for (const key of required) {
+    if (!val[key]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: `${key} is required when STORAGE_DRIVER is "s3"`,
+      });
+    }
+  }
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -175,6 +266,71 @@ export const config = {
         : 10000,
     // Per-entity workflowType ids (registered onto workflowEntities at boot).
     walletTypeId: env.WALLET_TYPE_ID ?? '',
+    topupRequestTypeId: env.TOPUP_REQUEST_TYPE_ID ?? '',
+  },
+  storage: {
+    driver: env.STORAGE_DRIVER ?? 'local',
+    maxFileBytes:
+      typeof env.STORAGE_MAX_FILE_BYTES === 'number'
+        ? env.STORAGE_MAX_FILE_BYTES
+        : 10 * 1024 * 1024,
+    allowedContentTypes: (
+      env.STORAGE_ALLOWED_MIME ?? 'application/pdf,image/png,image/jpeg'
+    )
+      .split(',')
+      .map((m) => m.trim().toLowerCase())
+      .filter(Boolean),
+    local: {
+      // NOT under `media/` — that is a public static mount.
+      root: env.STORAGE_LOCAL_ROOT ?? './storage',
+    },
+    s3: {
+      // Unset endpoint = real AWS; set it for MinIO/Ceph (with path-style on).
+      endpoint: env.STORAGE_S3_ENDPOINT ?? '',
+      region: env.STORAGE_S3_REGION ?? '',
+      bucket: env.STORAGE_S3_BUCKET ?? '',
+      accessKeyId: env.STORAGE_S3_ACCESS_KEY_ID ?? '',
+      secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY ?? '',
+      forcePathStyle: env.STORAGE_S3_FORCE_PATH_STYLE !== 'false',
+      prefix: env.STORAGE_S3_PREFIX ?? '',
+    },
+  },
+  configuration: {
+    grpcTarget: env.CONFIG_GRPC_TARGET ?? '',
+    apiKey: env.CONFIG_API_KEY ?? '',
+    deadlineMs:
+      typeof env.CONFIG_GRPC_DEADLINE_MS === 'number'
+        ? env.CONFIG_GRPC_DEADLINE_MS
+        : 3000,
+    cacheTtlMs:
+      typeof env.CONFIG_CACHE_TTL_MS === 'number'
+        ? env.CONFIG_CACHE_TTL_MS
+        : 60000,
+  },
+  accounting: {
+    grpcTarget: env.ACCOUNTING_GRPC_TARGET ?? '',
+    apiKey: env.ACCOUNTING_API_KEY ?? '',
+    deadlineMs:
+      typeof env.ACCOUNTING_GRPC_DEADLINE_MS === 'number'
+        ? env.ACCOUNTING_GRPC_DEADLINE_MS
+        : 5000,
+    glPostingEnabled: env.WALLET_GL_POSTING_ENABLED === 'true',
+    reconcileIntervalSeconds:
+      typeof env.GL_RECONCILE_INTERVAL_SECONDS === 'number'
+        ? env.GL_RECONCILE_INTERVAL_SECONDS
+        : 300,
+    reconcileBatchSize:
+      typeof env.GL_RECONCILE_BATCH_SIZE === 'number'
+        ? env.GL_RECONCILE_BATCH_SIZE
+        : 50,
+    reconcileRetryAfterSeconds:
+      typeof env.GL_RECONCILE_RETRY_AFTER_SECONDS === 'number'
+        ? env.GL_RECONCILE_RETRY_AFTER_SECONDS
+        : 3600,
+    reconcileMinAgeSeconds:
+      typeof env.GL_RECONCILE_MIN_AGE_SECONDS === 'number'
+        ? env.GL_RECONCILE_MIN_AGE_SECONDS
+        : 60,
   },
   usageRestriction: {
     mode: env.USAGE_RESTRICTION_MODE ?? 'off',

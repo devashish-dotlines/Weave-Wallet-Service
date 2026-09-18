@@ -8,6 +8,9 @@ node_modules/
 build/
 dist/
 .env
+# Local env copies/backups (hold real secrets); keep the template
+.env.*
+!.env.example
 sonar-project.properties
 # Compiled Java class files
 *.class
@@ -58,3 +61,6 @@ install.log
 
 # Next.js build output
 .next/
+
+# Uploaded objects (local storage driver)
+/storage

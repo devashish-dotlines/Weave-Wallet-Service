@@ -69,4 +69,21 @@ export class UomRepo extends BaseRepo implements IUomRepo {
     const saved = await existing.update(persistentObj);
     return saved.id;
   }
+
+  public async findLegacyMapping(
+    legacyUomId: string,
+  ): Promise<{ unitCategoryId: string; unitId: string; unitCode: string } | null> {
+    const row = await this.models.UomLegacyMap.findOne({ where: { legacyUomId } });
+    return row
+      ? { unitCategoryId: row.unitCategoryId, unitId: row.unitId, unitCode: row.unitCode }
+      : null;
+  }
+
+  public async countUsage(uomId: string): Promise<{ wallets: number; rates: number }> {
+    const [wallets, rates] = await Promise.all([
+      this.models.Wallet.count({ where: { unitId: uomId, voided: false } }),
+      this.models.UomRate.count({ where: { uomId, voided: false } }),
+    ]);
+    return { wallets, rates };
+  }
 }

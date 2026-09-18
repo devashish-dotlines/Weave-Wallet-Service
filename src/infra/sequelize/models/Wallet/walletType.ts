@@ -44,6 +44,11 @@ export class WalletType extends Model<WalletType> {
   @Column
   allowTransfersOut!: boolean;
 
+  // May wallets of this type be topped up (bank deposit / gateway)?
+  @Default(false)
+  @Column
+  allowTopup!: boolean;
+
   @Default(false)
   @Column
   allowWithdrawals!: boolean;

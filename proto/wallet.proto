@@ -30,6 +30,8 @@ message ProvisionWalletRequest {
   // A repeat returns the original wallet instead of creating a second one.
   string external_ref = 1;
   string wallet_type_id = 2;
+  // DEPRECATED: a single wlt_uom id. Still accepted (a retired currency uom id
+  // is translated); send unit_category_id + unit_id instead.
   string uom_id = 3;
   string owner_type_code = 4;      // CUSTOMER | PARTNER | USER — resolved to an id here
   string owner_id = 5;             // opaque; the owning service's own customer id
@@ -42,6 +44,11 @@ message ProvisionWalletRequest {
   string credit_idempotency_key = 9;
   repeated UsageRestrictionInput restrictions = 10;
   string requested_by = 11;
+  // The wallet's unit: its category (CURRENCY, POINTS, TIME, DATA …) and the
+  // unit within it — accounting's acc_currency id for CURRENCY, a wallet UOM
+  // id otherwise. Wins over uom_id when both are set.
+  string unit_category_id = 12;
+  string unit_id = 13;
 }
 
 message ProvisionWalletResponse {

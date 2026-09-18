@@ -7,8 +7,10 @@ import {
   IsUUID,
   PrimaryKey,
   HasMany,
+  ForeignKey,
 } from 'sequelize-typescript';
-import { BalanceTypeUom } from './balanceTypeUom';
+import { BalanceTypeUnit } from './balanceTypeUnit';
+import { UomCategory } from './uomCategory';
 
 @Table({ tableName: 'wlt_balance_type', underscored: true, timestamps: false })
 export class BalanceType extends Model<BalanceType> {
@@ -32,9 +34,15 @@ export class BalanceType extends Model<BalanceType> {
   @Column
   isActive!: boolean;
 
-  // Tagged allowed UOMs (link rows). Empty ⇒ unrestricted.
-  @HasMany(() => BalanceTypeUom)
-  allowedUoms!: BalanceTypeUom[];
+  // The kind of unit this balance holds. Nullable in the DB only so DB_SYNC can
+  // add it to existing rows; the unit-category migration fills it.
+  @ForeignKey(() => UomCategory)
+  @Column({ type: DataType.UUID, allowNull: true })
+  categoryId!: string | null;
+
+  // Allowed units of that category (link rows). Empty ⇒ any unit of the category.
+  @HasMany(() => BalanceTypeUnit)
+  allowedUnits!: BalanceTypeUnit[];
 
   @Default(false)
   @Column

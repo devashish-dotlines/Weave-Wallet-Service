@@ -10,7 +10,8 @@ import { WalletDTO, CreateWalletDTO, UpdateWalletDTO } from '../../DTO/walletDTO
 import { IWalletRepo } from '../../repos/interface/IWalletRepo';
 import { IWalletTypeRepo } from '../../repos/interface/IWalletTypeRepo';
 import { IBalanceTypeRepo } from '../../repos/interface/IBalanceTypeRepo';
-import { IUomRepo } from '../../repos/interface/IUomRepo';
+import { IUnitRegistry } from '../../services/unitRegistry.service';
+import { CurrencyCatalogUnavailableError } from '../../services/currencyCatalog.service';
 import { IOwnerTypeRepo } from '../../repos/interface/IOwnerTypeRepo';
 import { WalletResponse } from '../shared/response';
 
@@ -53,33 +54,52 @@ export class CreateWalletUseCase
     private readonly repo: IWalletRepo,
     private readonly walletTypeRepo: IWalletTypeRepo,
     private readonly balanceTypeRepo: IBalanceTypeRepo,
-    private readonly uomRepo: IUomRepo,
+    private readonly units: IUnitRegistry,
     private readonly ownerTypeRepo: IOwnerTypeRepo,
     private readonly workflowInitiator?: WalletWorkflowInitiator,
   ) {}
 
   async execute(dto: CreateWalletDTO): Promise<WalletResponse<string>> {
     try {
+      return await this.create(dto);
+    } catch (err) {
+      if (err instanceof CurrencyCatalogUnavailableError) {
+        return left(
+          new BaseErrors.BusinessRuleError(
+            `Can't check the currency unit right now: ${err.message}`,
+          ),
+        );
+      }
+      return left(new GenericAppError.UnexpectedError(err));
+    }
+  }
+
+  private async create(dto: CreateWalletDTO): Promise<WalletResponse<string>> {
+    try {
       // Referential checks — the FKs must point at live rows.
       const walletType = await this.walletTypeRepo.findById(dto.walletTypeId);
       if (!walletType) {
         return left(new BaseErrors.NotFoundError('Wallet type not found'));
       }
-      if (!(await this.uomRepo.exists(dto.uomId))) {
-        return left(new BaseErrors.NotFoundError('UOM not found'));
+      // The unit: category + unit id (or a legacy single uomId, translated).
+      const ref = await this.units.fromInput(dto);
+      const unit = ref ? await this.units.resolve(ref) : null;
+      if (!unit) {
+        return left(new BaseErrors.NotFoundError('Unit not found'));
       }
 
-      // Not every UOM is meaningful for every balance type — the wallet type
-      // supplies the balance type, which in turn constrains the UOM. An
-      // untagged balance type is unrestricted.
-      const uomAllowed = await this.balanceTypeRepo.isUomAllowed(
+      // The wallet type supplies the balance type, which fixes the unit
+      // category and (optionally) the units of it that are allowed.
+      const balanceType = await this.balanceTypeRepo.findById(
         walletType.balanceTypeId,
-        dto.uomId,
       );
-      if (!uomAllowed) {
+      if (!balanceType) {
+        return left(new BaseErrors.NotFoundError('Balance type not found'));
+      }
+      if (!balanceType.allowsUnit(unit.categoryId, unit.unitId)) {
         return left(
           new BaseErrors.BusinessRuleError(
-            "This UOM is not allowed for the wallet type's balance type",
+            `${unit.code} is not allowed for the ${balanceType.code} balance type`,
           ),
         );
       }
@@ -103,7 +123,9 @@ export class CreateWalletUseCase
       const orError = Wallet.create({
         code,
         walletTypeId: dto.walletTypeId,
-        uomId: dto.uomId,
+        unitCategoryId: unit.categoryId,
+        unitId: unit.unitId,
+        unitCode: unit.code,
         ownerTypeId: dto.ownerTypeId,
         ownerId: dto.ownerId,
         externalRef: dto.externalRef,
@@ -157,6 +179,8 @@ export class CreateWalletUseCase
 
       return right(Result.ok<string>(saved));
     } catch (err) {
+      // Let execute() turn an accounting outage into a readable error.
+      if (err instanceof CurrencyCatalogUnavailableError) throw err;
       return left(new GenericAppError.UnexpectedError(err));
     }
   }
@@ -198,7 +222,9 @@ export class UpdateWalletUseCase
         {
           code: existing.code,
           walletTypeId: existing.walletTypeId,
-          uomId: existing.uomId,
+          unitCategoryId: existing.unitCategoryId,
+          unitId: existing.unitId,
+          unitCode: existing.unitCode,
           ownerTypeId: existing.ownerTypeId,
           ownerId: existing.ownerId,
           parentWalletId: dto.parentWalletId ?? existing.parentWalletId,

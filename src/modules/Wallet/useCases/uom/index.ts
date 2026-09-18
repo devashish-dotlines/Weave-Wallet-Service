@@ -1,4 +1,4 @@
-import { uomRepo } from '../../repos';
+import { uomRepo, uomCategoryRepo, balanceTypeRepo } from '../../repos';
 import {
   CreateUomUseCase,
   UpdateUomUseCase,
@@ -12,9 +12,13 @@ import {
   ListUomController,
 } from './uom.controller';
 
-const createUomUseCase = new CreateUomUseCase(uomRepo);
+const createUomUseCase = new CreateUomUseCase(uomRepo, uomCategoryRepo);
 const updateUomUseCase = new UpdateUomUseCase(uomRepo);
-const deleteUomUseCase = new DeleteUomUseCase(uomRepo);
+const deleteUomUseCase = new DeleteUomUseCase(
+  uomRepo,
+  balanceTypeRepo,
+  uomCategoryRepo,
+);
 const listUomUseCase = new ListUomUseCase(uomRepo);
 
 export const createUomController = new CreateUomController(createUomUseCase);

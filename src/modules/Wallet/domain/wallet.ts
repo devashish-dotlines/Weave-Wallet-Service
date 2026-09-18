@@ -4,6 +4,7 @@ import { BaseEntityProps } from '../../../core/domain/Interfaces/BaseEntityProps
 import { DateTimeObject } from '../../Core/domain/dateTimeObject';
 import { Result } from '../../../core/logic/Result';
 import { Guard } from '../../../core/logic/Guard';
+import { UnitRef } from './unitRef';
 
 /**
  * The wallet lifecycle slugs the local default uses (FR-WL-6). Once workflow is
@@ -18,8 +19,12 @@ export interface WalletProps extends BaseEntityProps {
   /** Auto-generated unique code, prefix `WAL` (FR-WL-2). */
   code: string;
   walletTypeId: string;
-  /** Unit of value (UOM replaces currency). */
-  uomId: string;
+  /** Unit category of the balance (CURRENCY, POINTS, TIME, DATA …). */
+  unitCategoryId: string;
+  /** acc_currency id (CURRENCY) or wlt_uom id (LOCAL categories). */
+  unitId: string;
+  /** Denormalised code of that unit (BDT, POINTS, MB). */
+  unitCode: string;
   /** Owner-type lookup FK (Customer, Partner, User, …). */
   ownerTypeId: string;
   /** Opaque owner id from the owning service — not resolved cross-service. */
@@ -61,8 +66,18 @@ export class Wallet extends AuditableEntity<WalletProps> {
   get walletTypeId(): string {
     return this.props.walletTypeId;
   }
-  get uomId(): string {
-    return this.props.uomId;
+  get unitCategoryId(): string {
+    return this.props.unitCategoryId;
+  }
+  get unitId(): string {
+    return this.props.unitId;
+  }
+  get unitCode(): string {
+    return this.props.unitCode;
+  }
+  /** The unit as a reference, for the UnitRegistry. */
+  get unit(): UnitRef {
+    return { categoryId: this.props.unitCategoryId, unitId: this.props.unitId };
   }
   get ownerTypeId(): string {
     return this.props.ownerTypeId;
@@ -160,7 +175,9 @@ export class Wallet extends AuditableEntity<WalletProps> {
     const guard = Guard.againstNullOrUndefinedOrEmptyBulk([
       { argument: props.code, argumentName: 'code' },
       { argument: props.walletTypeId, argumentName: 'walletTypeId' },
-      { argument: props.uomId, argumentName: 'uomId' },
+      { argument: props.unitCategoryId, argumentName: 'unitCategoryId' },
+      { argument: props.unitId, argumentName: 'unitId' },
+      { argument: props.unitCode, argumentName: 'unitCode' },
       { argument: props.ownerTypeId, argumentName: 'ownerTypeId' },
       { argument: props.ownerId, argumentName: 'ownerId' },
       { argument: props.createdBy, argumentName: 'createdBy' },

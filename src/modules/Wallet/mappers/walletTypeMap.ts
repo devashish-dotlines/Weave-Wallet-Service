@@ -18,6 +18,7 @@ export class WalletTypeMap extends Mapper<WalletType> {
       overdraftAllowed: w.overdraftAllowed,
       overdraftLimit: w.overdraftLimit ?? null,
       allowTransfersOut: w.allowTransfersOut,
+      allowTopup: w.allowTopup,
       allowWithdrawals: w.allowWithdrawals,
       requiredKycLevel: w.requiredKycLevel,
       glAccountCode: w.glAccountCode ?? null,
@@ -47,6 +48,7 @@ export class WalletTypeMap extends Mapper<WalletType> {
             ? undefined
             : Number(raw.overdraftLimit),
         allowTransfersOut: raw.allowTransfersOut,
+        allowTopup: !!raw.allowTopup,
         allowWithdrawals: raw.allowWithdrawals,
         requiredKycLevel: Number(raw.requiredKycLevel),
         glAccountCode: raw.glAccountCode ?? undefined,
@@ -78,6 +80,7 @@ export class WalletTypeMap extends Mapper<WalletType> {
       overdraftAllowed: w.overdraftAllowed,
       overdraftLimit: w.overdraftLimit,
       allowTransfersOut: w.allowTransfersOut,
+      allowTopup: w.allowTopup,
       allowWithdrawals: w.allowWithdrawals,
       requiredKycLevel: w.requiredKycLevel,
       glAccountCode: w.glAccountCode,

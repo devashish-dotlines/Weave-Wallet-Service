@@ -12,6 +12,8 @@ export class UomMap extends Mapper<Uom> {
       name: u.name,
       code: u.code,
       symbol: u.symbol ?? null,
+      categoryId: u.categoryId,
+      factorToBase: u.factorToBase,
       isActive: u.isActive,
       voided: u.voided ?? false,
       createdBy: u.createdBy,
@@ -31,6 +33,8 @@ export class UomMap extends Mapper<Uom> {
         name: raw.name,
         code: raw.code,
         symbol: raw.symbol ?? undefined,
+        categoryId: raw.categoryId,
+        factorToBase: Number(raw.factorToBase ?? 1),
         isActive: raw.isActive,
         voided: raw.voided,
         createdBy: raw.createdBy,
@@ -55,6 +59,8 @@ export class UomMap extends Mapper<Uom> {
       name: u.name,
       code: u.code,
       symbol: u.symbol,
+      categoryId: u.categoryId,
+      factorToBase: u.factorToBase,
       isActive: u.isActive,
     };
   }

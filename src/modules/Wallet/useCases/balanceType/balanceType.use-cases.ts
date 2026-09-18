@@ -12,21 +12,34 @@ import {
   UpdateBalanceTypeDTO,
 } from '../../DTO/balanceTypeDTO';
 import { IBalanceTypeRepo } from '../../repos/interface/IBalanceTypeRepo';
-import { IUomRepo } from '../../repos/interface/IUomRepo';
+import { IUomCategoryRepo } from '../../repos/interface/IUomCategoryRepo';
+import { IUnitRegistry } from '../../services/unitRegistry.service';
+import { CurrencyCatalogUnavailableError } from '../../services/currencyCatalog.service';
 import { WalletResponse } from '../shared/response';
 
 /**
- * Every tagged UOM must reference a live row. Returns the first offending id,
- * or null when the whole list checks out.
+ * Every allowed unit must be a live unit OF THE BALANCE TYPE'S CATEGORY — a
+ * currency for CURRENCY, a wlt_uom of that category otherwise. Returns the
+ * first offending id, or null when the whole list checks out.
  */
-async function findUnknownUom(
-  uomRepo: IUomRepo,
-  uomIds: string[],
+async function findForeignUnit(
+  registry: IUnitRegistry,
+  categoryId: string,
+  unitIds: string[],
 ): Promise<string | null> {
-  for (const uomId of uomIds) {
-    if (!(await uomRepo.exists(uomId))) return uomId;
+  for (const unitId of unitIds) {
+    if (!(await registry.resolve({ categoryId, unitId }))) return unitId;
   }
   return null;
+}
+
+/** Accounting down while checking currency units: a clear error, not a 500. */
+function catalogError(err: unknown): BaseErrors.AllErrors | null {
+  return err instanceof CurrencyCatalogUnavailableError
+    ? new BaseErrors.BusinessRuleError(
+        `Can't check currency units right now: ${err.message}`,
+      )
+    : null;
 }
 
 export class CreateBalanceTypeUseCase
@@ -34,7 +47,8 @@ export class CreateBalanceTypeUseCase
 {
   constructor(
     private readonly repo: IBalanceTypeRepo,
-    private readonly uomRepo: IUomRepo,
+    private readonly categoryRepo: IUomCategoryRepo,
+    private readonly units: IUnitRegistry,
   ) {}
 
   async execute(dto: CreateBalanceTypeDTO): Promise<WalletResponse<string>> {
@@ -49,11 +63,24 @@ export class CreateBalanceTypeUseCase
         );
       }
 
-      const allowedUomIds = [...new Set(dto.allowedUomIds ?? [])];
-      const unknownUom = await findUnknownUom(this.uomRepo, allowedUomIds);
-      if (unknownUom) {
+      const category = dto.categoryId
+        ? await this.categoryRepo.findById(dto.categoryId)
+        : null;
+      if (!category || !category.isActive) {
+        return left(new BaseErrors.NotFoundError('Unit category not found'));
+      }
+
+      const allowedUnitIds = [...new Set(dto.allowedUnitIds ?? [])];
+      const foreign = await findForeignUnit(
+        this.units,
+        category.id.toString(),
+        allowedUnitIds,
+      );
+      if (foreign) {
         return left(
-          new BaseErrors.NotFoundError(`UOM "${unknownUom}" not found`),
+          new BaseErrors.ValidationError(
+            `Unit "${foreign}" is not a ${category.code} unit`,
+          ),
         );
       }
 
@@ -63,7 +90,8 @@ export class CreateBalanceTypeUseCase
         code,
         description: dto.description,
         isActive: dto.isActive ?? true,
-        allowedUomIds,
+        categoryId: category.id.toString(),
+        allowedUnitIds,
         createdBy: dto.requestedBy,
         updatedBy: dto.requestedBy,
         createdAt: now,
@@ -79,7 +107,7 @@ export class CreateBalanceTypeUseCase
       }
       return right(Result.ok<string>(saved));
     } catch (err) {
-      return left(new GenericAppError.UnexpectedError(err));
+      return left(catalogError(err) ?? new GenericAppError.UnexpectedError(err));
     }
   }
 }
@@ -89,7 +117,7 @@ export class UpdateBalanceTypeUseCase
 {
   constructor(
     private readonly repo: IBalanceTypeRepo,
-    private readonly uomRepo: IUomRepo,
+    private readonly units: IUnitRegistry,
   ) {}
 
   async execute(dto: UpdateBalanceTypeDTO): Promise<WalletResponse<string>> {
@@ -99,16 +127,23 @@ export class UpdateBalanceTypeUseCase
         return left(new BaseErrors.NotFoundError('Balance type not found'));
       }
 
-      // Absent field ⇒ keep the current tags; a present array replaces them
-      // wholesale (`[]` clears the restriction).
-      const allowedUomIds =
-        dto.allowedUomIds === undefined
-          ? existing.allowedUomIds
-          : [...new Set(dto.allowedUomIds)];
-      const unknownUom = await findUnknownUom(this.uomRepo, allowedUomIds);
-      if (unknownUom) {
+      // Absent field ⇒ keep the current list; a present array replaces it
+      // wholesale (`[]` = any unit of the category). The category never
+      // changes: wallets already hold units of it.
+      const allowedUnitIds =
+        dto.allowedUnitIds === undefined
+          ? existing.allowedUnitIds
+          : [...new Set(dto.allowedUnitIds)];
+      const foreign = await findForeignUnit(
+        this.units,
+        existing.categoryId,
+        allowedUnitIds,
+      );
+      if (foreign) {
         return left(
-          new BaseErrors.NotFoundError(`UOM "${unknownUom}" not found`),
+          new BaseErrors.ValidationError(
+            `Unit "${foreign}" is not a unit of this balance type's category`,
+          ),
         );
       }
 
@@ -121,7 +156,8 @@ export class UpdateBalanceTypeUseCase
           code: existing.code,
           description: dto.description ?? existing.description,
           isActive: dto.isActive ?? existing.isActive,
-          allowedUomIds,
+          categoryId: existing.categoryId,
+          allowedUnitIds,
           voided: existing.voided,
           createdBy: existing.createdBy,
           createdAt: existing.createdAt,
@@ -142,7 +178,7 @@ export class UpdateBalanceTypeUseCase
       }
       return right(Result.ok<string>(saved));
     } catch (err) {
-      return left(new GenericAppError.UnexpectedError(err));
+      return left(catalogError(err) ?? new GenericAppError.UnexpectedError(err));
     }
   }
 }

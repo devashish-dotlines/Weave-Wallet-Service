@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package configuration.v1;
+
+// Read-only inter-service query contract for the configuration-service. Other
+// backend services call this to pull shared configuration and address data over
+// gRPC instead of REST. Callers authenticate with a per-consumer service API key
+// supplied as `x-api-key` metadata (NOT the gateway/Keycloak JWT), resolved
+// against this service's APIKey table. Keep this file byte-identical in every
+// consumer and the provider.
+
+// -----------------------------------------------------------------------------
+// Typed configuration (ConfigurationType -> Configuration values)
+// -----------------------------------------------------------------------------
+service ConfigurationQueryService {
+  // Resolve configuration values by the ConfigurationType's stable `code`
+  // (e.g. "ADDRESS_FORMAT"), optionally narrowed to a key and/or service scope.
+  // Mirrors the REST GET /configurations/values/lookup read path.
+  rpc Lookup(LookupRequest) returns (LookupResponse);
+}
+
+message LookupRequest {
+  string type_code = 1;    // required, stable ConfigurationType code
+  string key = 2;          // optional
+  string scope = 3;        // optional consuming-service scope (empty = any)
+  bool active_only = 4;    // default true on the server when unset
+}
+
+message ConfigurationValue {
+  string id = 1;
+  string type_id = 2;
+  string key = 3;
+  string value = 4;        // raw text; interpret per value_type
+  string value_type = 5;   // string | number | boolean | json
+  string scope = 6;        // empty = global
+  bool active = 7;
+}
+
+message LookupResponse {
+  bool found = 1;                         // false => unknown type_code
+  repeated ConfigurationValue values = 2;
+}
+
+// -----------------------------------------------------------------------------
+// Address (template-driven international addresses)
+// -----------------------------------------------------------------------------
+service AddressQueryService {
+  // The active address format template for a country (fields + display format),
+  // so a consumer can build a form or know the current contract.
+  rpc GetActiveFormat(GetActiveFormatRequest) returns (GetActiveFormatResponse);
+  // Server-render a stored address to a display string + line array, using the
+  // record's PINNED template version (for invoices, labels, statements).
+  rpc RenderAddress(RenderAddressRequest) returns (RenderAddressResponse);
+  // Enum options for a reference dataset (e.g. BD_DIVISIONS), optionally
+  // narrowed to a `parent_code` so a consumer can drive a cascading dropdown
+  // (division → district → upazila → union). Mirrors the REST
+  // GET /address/datasets/:code/items read path.
+  rpc ListDatasetItems(ListDatasetItemsRequest) returns (ListDatasetItemsResponse);
+  // Validate + render transient address `data` against a country's ACTIVE
+  // template WITHOUT persisting a record. For consumers that store the address
+  // inline but delegate the template contract: returns whether the data is
+  // valid, the template `version` to pin, field-level errors, and a rendered
+  // display string. Only an unknown country / missing template yields
+  // `found: false`; validation failures come back with `valid: false`.
+  rpc PrepareAddress(PrepareAddressRequest) returns (PrepareAddressResponse);
+}
+
+message GetActiveFormatRequest {
+  string country_code = 1;   // ISO 3166-1 alpha-2
+}
+
+message GetActiveFormatResponse {
+  bool found = 1;              // false => no active template for country
+  string country_code = 2;
+  int32 version = 3;
+  string display_format = 4;
+  string fields_json = 5;      // FieldDefinition[] serialized as JSON
+}
+
+message RenderAddressRequest {
+  string id = 1;               // address record id
+  string locale = 2;           // optional; e.g. "bn" for local enum names
+  bool include_country = 3;    // append ISO country name
+}
+
+message RenderAddressResponse {
+  bool found = 1;              // false => record (or its pinned template) missing
+  string text = 2;
+  repeated string lines = 3;
+}
+
+message ListDatasetItemsRequest {
+  string dataset_code = 1;     // required, e.g. "BD_DISTRICTS"
+  string parent_code = 2;      // optional; narrows to a parent for cascades
+  bool active_only = 3;        // list only active items (recommended: true)
+}
+
+message DatasetItem {
+  string code = 1;             // stable machine code (unique within the dataset)
+  string name = 2;             // display name
+  string local_name = 3;       // localized/native name (empty if none)
+  string parent_code = 4;      // parent item's code (empty at the top level)
+  int32 sort_order = 5;
+  bool active = 6;
+}
+
+message ListDatasetItemsResponse {
+  bool found = 1;                    // false => unknown dataset_code
+  repeated DatasetItem items = 2;
+}
+
+message PrepareAddressRequest {
+  string country_code = 1;     // ISO 3166-1 alpha-2
+  string data_json = 2;        // JSON object { fieldKey: value }
+  string locale = 3;           // optional; e.g. "bn" for local enum names
+  bool include_country = 4;    // append ISO country name to the rendering
+}
+
+message AddressFieldError {
+  string field = 1;
+  string rule = 2;             // required | maxLength | pattern | additionalProperties | enum | enumCascade
+  string message = 3;
+}
+
+message PrepareAddressResponse {
+  bool found = 1;                          // false => unknown country / no active template
+  bool valid = 2;                          // whether data satisfies the template
+  int32 version = 3;                       // active template version (pin this)
+  repeated AddressFieldError errors = 4;   // field-level failures (empty when valid)
+  string text = 5;                         // rendered display string (empty when invalid)
+  repeated string lines = 6;               // rendered lines (empty when invalid)
+}

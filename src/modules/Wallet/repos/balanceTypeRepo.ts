@@ -11,11 +11,11 @@ export class BalanceTypeRepo extends BaseRepo implements IBalanceTypeRepo {
     super(models, models.BalanceType);
   }
 
-  /** Eager-load the live UOM tags so `toDomain` can resolve `allowedUomIds`. */
+  /** Eager-load the live unit tags so `toDomain` can resolve `allowedUnitIds`. */
   private allowedUomInclude() {
     return {
-      model: this.models.BalanceTypeUom,
-      as: 'allowedUoms',
+      model: this.models.BalanceTypeUnit,
+      as: 'allowedUnits',
       where: { voided: false },
       required: false,
     };
@@ -56,23 +56,11 @@ export class BalanceTypeRepo extends BaseRepo implements IBalanceTypeRepo {
     return out;
   }
 
-  /**
-   * A balance type with no live tags is unrestricted, so every UOM passes —
-   * this mirrors `BalanceType.allowsUom` without loading the aggregate.
-   */
-  public async isUomAllowed(
-    balanceTypeId: string,
-    uomId: string,
-  ): Promise<boolean> {
-    const link = this.models.BalanceTypeUom;
-    const tagged = await link.count({
-      where: { balanceTypeId, voided: false },
+  /** Balance types listing this unit (a unit in use is protected from delete). */
+  public async countByUnit(unitId: string): Promise<number> {
+    return this.models.BalanceTypeUnit.count({
+      where: { unitId, voided: false },
     });
-    if (tagged === 0) return true;
-    const match = await link.count({
-      where: { balanceTypeId, uomId, voided: false },
-    });
-    return match > 0;
   }
 
   public async countWalletTypesByBalanceType(
@@ -88,24 +76,24 @@ export class BalanceTypeRepo extends BaseRepo implements IBalanceTypeRepo {
    * come back, void the ones that were dropped, insert the new ones. Runs
    * inside the caller's transaction so the aggregate saves atomically.
    */
-  private async syncAllowedUoms(
+  private async syncAllowedUnits(
     domainObject: BalanceType,
     txn: Transaction,
   ): Promise<void> {
-    const link = this.models.BalanceTypeUom;
+    const link = this.models.BalanceTypeUnit;
     const balanceTypeId = domainObject.id.toString();
     const actor = domainObject.updatedBy;
     const now = DateTimeObject.create(-1).getValue().value;
     const serverVersion = await new ServerVersion().getServerVersion();
 
-    const wanted = new Set(domainObject.allowedUomIds);
+    const wanted = new Set(domainObject.allowedUnitIds);
     const rows = await link.findAll({
       where: { balanceTypeId },
       transaction: txn,
     });
 
     for (const row of rows) {
-      const keep = wanted.delete(row.uomId);
+      const keep = wanted.delete(row.unitId);
       if (keep && row.voided) {
         await row.update(
           {
@@ -133,11 +121,11 @@ export class BalanceTypeRepo extends BaseRepo implements IBalanceTypeRepo {
       }
     }
 
-    for (const uomId of wanted) {
+    for (const unitId of wanted) {
       await link.create(
         {
           balanceTypeId,
-          uomId,
+          unitId,
           voided: false,
           createdAt: now,
           createdBy: actor,
@@ -158,7 +146,7 @@ export class BalanceTypeRepo extends BaseRepo implements IBalanceTypeRepo {
       const saved = await this.baseModel.create(persistentObj, {
         transaction: txn,
       });
-      await this.syncAllowedUoms(domainObject, txn);
+      await this.syncAllowedUnits(domainObject, txn);
       await txn.commit();
       return saved.id;
     } catch (err) {
@@ -178,7 +166,7 @@ export class BalanceTypeRepo extends BaseRepo implements IBalanceTypeRepo {
       if (!existing) throw new Error('No BalanceType exists with this id');
       const persistentObj = await BalanceTypeMap.toPersistence(domainObject);
       const saved = await existing.update(persistentObj, { transaction: txn });
-      await this.syncAllowedUoms(domainObject, txn);
+      await this.syncAllowedUnits(domainObject, txn);
       await txn.commit();
       return saved.id;
     } catch (err) {

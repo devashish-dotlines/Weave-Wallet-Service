@@ -23,6 +23,9 @@ export class CreditWalletController extends BaseController {
     const dto: CreditWalletDTO = {
       ...req.body,
       walletId: req.params.id,
+      // The admin route never lets the client claim another source.
+      sourceType: 'ADMIN',
+      sourceRef: undefined,
       requestedBy: req.user?.id,
     };
     try {
@@ -44,6 +47,9 @@ export class DebitWalletController extends BaseController {
     const dto: DebitWalletDTO = {
       ...req.body,
       walletId: req.params.id,
+      // The admin route never lets the client claim another source.
+      sourceType: 'ADMIN',
+      sourceRef: undefined,
       requestedBy: req.user?.id,
     };
     try {
@@ -65,6 +71,10 @@ export class TransferController extends BaseController {
     const dto: TransferDTO = {
       ...req.body,
       fromWalletId: req.params.id,
+      // The admin route never lets the client claim another source.
+      sourceType: 'ADMIN',
+      sourceRef: undefined,
+      dailyLimit: undefined,
       requestedBy: req.user?.id,
     };
     try {

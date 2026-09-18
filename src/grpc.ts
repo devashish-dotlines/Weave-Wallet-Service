@@ -6,6 +6,7 @@ require('dotenv').config();
 import './infra/sequelize';
 import './modules/Wallet/repos';
 import { registerWalletWorkflowEntities } from './modules/Wallet/infra/workflow/registerEntities';
+import { registerWalletActions } from './modules/Wallet/infra/workflow/registerActions';
 import { startGrpcServer } from './infra/grpc/server';
 
 // NOTE: service-to-service auth for inbound gRPC is installed by the
@@ -22,5 +23,9 @@ import { startGrpcServer } from './infra/grpc/server';
 // use-cases, so register the entities explicitly or the registry stays empty and
 // every sync is a silent no-op.
 registerWalletWorkflowEntities();
+
+// DispatchAction resolves engine action slugs against the action registry, which
+// is only populated by this call — without it every dispatch is "unknown action".
+registerWalletActions();
 
 startGrpcServer();

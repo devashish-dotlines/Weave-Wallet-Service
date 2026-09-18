@@ -8,6 +8,7 @@ export interface CreateWalletTypeDTO {
   overdraftAllowed?: boolean;
   overdraftLimit?: number;
   allowTransfersOut?: boolean;
+  allowTopup?: boolean;
   allowWithdrawals?: boolean;
   requiredKycLevel?: number;
   glAccountCode?: string;
@@ -24,6 +25,7 @@ export interface UpdateWalletTypeDTO {
   overdraftAllowed?: boolean;
   overdraftLimit?: number;
   allowTransfersOut?: boolean;
+  allowTopup?: boolean;
   allowWithdrawals?: boolean;
   requiredKycLevel?: number;
   glAccountCode?: string;
@@ -40,6 +42,7 @@ export interface WalletTypeDTO {
   overdraftAllowed: boolean;
   overdraftLimit?: number;
   allowTransfersOut: boolean;
+  allowTopup: boolean;
   allowWithdrawals: boolean;
   requiredKycLevel: number;
   glAccountCode?: string;

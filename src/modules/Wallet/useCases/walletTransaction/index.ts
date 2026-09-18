@@ -4,6 +4,7 @@ import {
   walletTransactionRepo,
   walletUsageRestrictionRepo,
 } from '../../repos';
+import { unitRegistry } from '../../services';
 import {
   CreditWalletUseCase,
   DebitWalletUseCase,
@@ -24,25 +25,26 @@ import {
 // Exported so the provisioning use case funds a new wallet through this exact
 // instance rather than re-wiring an identical one.
 export const creditWalletUseCase = new CreditWalletUseCase(
-  walletRepo,
   walletTransactionRepo,
+  walletRepo,
+  unitRegistry,
 );
 const debitWalletUseCase = new DebitWalletUseCase(
   walletRepo,
   walletTypeRepo,
   walletTransactionRepo,
   walletUsageRestrictionRepo,
+  unitRegistry,
 );
-const transferUseCase = new TransferUseCase(
+// Exported so self-service transfers reuse this instance (all wallet rules + lock).
+export const transferUseCase = new TransferUseCase(
   walletRepo,
   walletTypeRepo,
   walletTransactionRepo,
   walletUsageRestrictionRepo,
+  unitRegistry,
 );
-const recomputeUseCase = new RecomputeWalletBalanceUseCase(
-  walletRepo,
-  walletTransactionRepo,
-);
+const recomputeUseCase = new RecomputeWalletBalanceUseCase(walletTransactionRepo);
 const listTxUseCase = new ListWalletTransactionsUseCase(walletTransactionRepo);
 const getTxUseCase = new GetWalletTransactionUseCase(walletTransactionRepo);
 

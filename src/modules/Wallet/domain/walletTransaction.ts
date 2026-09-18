@@ -30,6 +30,15 @@ export const WALLET_TX_STATES: WalletTxState[] = [
   'cancelled',
 ];
 
+/** What caused a movement. `GATEWAY` joins this list with payment gateways. */
+export type WalletTxSourceType = 'BANK_DEPOSIT' | 'TRANSFER' | 'ADMIN' | 'PROVISION';
+export const WALLET_TX_SOURCE_TYPES: WalletTxSourceType[] = [
+  'BANK_DEPOSIT',
+  'TRANSFER',
+  'ADMIN',
+  'PROVISION',
+];
+
 export interface WalletTransactionProps extends BaseEntityProps {
   /** Auto-generated unique code, prefix `WTX`. */
   code: string;
@@ -48,6 +57,11 @@ export interface WalletTransactionProps extends BaseEntityProps {
   /** Links the two legs of a transfer (credit leg → debit leg). */
   parentTransactionId?: string;
   description?: string;
+  sourceType?: WalletTxSourceType;
+  /** Reference into the originating record, e.g. `TUR:<topup code>`. */
+  sourceRef?: string;
+  /** Accounting voucher posted for this movement; unset until posted. */
+  glVoucherId?: string;
 }
 
 /**
@@ -96,6 +110,15 @@ export class WalletTransaction extends AuditableEntity<WalletTransactionProps> {
   get description(): string | undefined {
     return this.props.description;
   }
+  get sourceType(): WalletTxSourceType | undefined {
+    return this.props.sourceType;
+  }
+  get sourceRef(): string | undefined {
+    return this.props.sourceRef;
+  }
+  get glVoucherId(): string | undefined {
+    return this.props.glVoucherId;
+  }
 
   private constructor(props: WalletTransactionProps, id?: UniqueEntityID) {
     super(props, id);
@@ -134,6 +157,17 @@ export class WalletTransaction extends AuditableEntity<WalletTransactionProps> {
 
     const stateOk = Guard.isOneOf(props.state, WALLET_TX_STATES, 'state');
     if (!stateOk.succeeded) return Result.fail<WalletTransaction>(stateOk.message);
+
+    if (props.sourceType !== undefined) {
+      const sourceOk = Guard.isOneOf(
+        props.sourceType,
+        WALLET_TX_SOURCE_TYPES,
+        'sourceType',
+      );
+      if (!sourceOk.succeeded) {
+        return Result.fail<WalletTransaction>(sourceOk.message);
+      }
+    }
 
     if (!(props.amount > 0)) {
       return Result.fail<WalletTransaction>('amount must be greater than 0');

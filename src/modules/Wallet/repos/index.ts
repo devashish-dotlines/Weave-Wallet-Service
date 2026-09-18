@@ -9,6 +9,9 @@ import { WalletTransactionRepo } from './walletTransactionRepo';
 import { RegisteredServiceRepo } from './registeredServiceRepo';
 import { UsageDimensionRepo } from './usageDimensionRepo';
 import { WalletUsageRestrictionRepo } from './walletUsageRestrictionRepo';
+import { TopupRequestRepo } from './topupRequestRepo';
+import { UomRateRepo } from './uomRateRepo';
+import { UomCategoryRepo } from './uomCategoryRepo';
 
 /**
  * Manually-instantiated repo singletons for the Wallet module (no DI container).
@@ -24,6 +27,9 @@ export const walletTransactionRepo = new WalletTransactionRepo(models);
 export const registeredServiceRepo = new RegisteredServiceRepo(models);
 export const usageDimensionRepo = new UsageDimensionRepo(models);
 export const walletUsageRestrictionRepo = new WalletUsageRestrictionRepo(models);
+export const topupRequestRepo = new TopupRequestRepo(models);
+export const uomRateRepo = new UomRateRepo(models);
+export const uomCategoryRepo = new UomCategoryRepo(models);
 
 // DB-backed service-to-service auth: resolve the calling service from its
 // presented API key against the registered_service table (active + non-voided) —

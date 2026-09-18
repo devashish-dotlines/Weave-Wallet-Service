@@ -3,7 +3,9 @@ import { Sequelize } from 'sequelize-typescript';
 import { APIKey } from '../models/apiKey';
 import { ServerVersion } from '../models/serverVersion';
 import { BalanceType } from '../models/Wallet/balanceType';
-import { BalanceTypeUom } from '../models/Wallet/balanceTypeUom';
+import { BalanceTypeUnit } from '../models/Wallet/balanceTypeUnit';
+import { UomCategory } from '../models/Wallet/uomCategory';
+import { UomLegacyMap } from '../models/Wallet/uomLegacyMap';
 import { Uom } from '../models/Wallet/uom';
 import { OwnerType } from '../models/Wallet/ownerType';
 import { WalletType } from '../models/Wallet/walletType';
@@ -12,6 +14,9 @@ import { WalletTransaction } from '../models/Wallet/walletTransaction';
 import { RegisteredService } from '../models/Wallet/registeredService';
 import { UsageDimension } from '../models/Wallet/usageDimension';
 import { WalletUsageRestriction } from '../models/Wallet/walletUsageRestriction';
+import { UomRate } from '../models/Wallet/uomRate';
+import { TopupRequest } from '../models/Wallet/topupRequest';
+import { TopupRequestAttachment } from '../models/Wallet/topupRequestAttachment';
 
 import { config } from '../../../config/index';
 
@@ -30,7 +35,9 @@ export const sequelizeConnection = new Sequelize(
       ServerVersion,
       APIKey,
       BalanceType,
-      BalanceTypeUom,
+      UomCategory,
+      BalanceTypeUnit,
+      UomLegacyMap,
       Uom,
       OwnerType,
       WalletType,
@@ -39,6 +46,9 @@ export const sequelizeConnection = new Sequelize(
       RegisteredService,
       UsageDimension,
       WalletUsageRestriction,
+      TopupRequest,
+      UomRate,
+      TopupRequestAttachment,
       // Register new module models here.
     ],
     port: dbConfig.port,

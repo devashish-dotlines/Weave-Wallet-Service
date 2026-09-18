@@ -1,6 +1,17 @@
-export interface CreateWalletDTO {
+/**
+ * A unit as callers name it: category + unit id. `uomId` is the LEGACY single
+ * id (a wlt_uom id, or a retired currency uom id) accepted during the move to
+ * unit categories — the UnitRegistry translates it.
+ */
+export interface UnitInput {
+  unitCategoryId?: string;
+  unitId?: string;
+  /** @deprecated send unitCategoryId + unitId. */
+  uomId?: string;
+}
+
+export interface CreateWalletDTO extends UnitInput {
   walletTypeId: string;
-  uomId: string;
   ownerTypeId: string;
   ownerId: string;
   /**
@@ -34,10 +45,9 @@ export interface ProvisionRestrictionDTO {
  * on `externalRef`. Never reachable from the gateway — see
  * {@link ../useCases/wallet/provisionWallet.use-case}.
  */
-export interface ProvisionWalletDTO {
+export interface ProvisionWalletDTO extends UnitInput {
   externalRef: string;
   walletTypeId: string;
-  uomId: string;
   /** CUSTOMER | PARTNER | USER — resolved to an owner-type id by the use case. */
   ownerTypeCode: string;
   ownerId: string;
@@ -76,7 +86,9 @@ export interface WalletDTO {
   id: string;
   code: string;
   walletTypeId: string;
-  uomId: string;
+  unitCategoryId: string;
+  unitId: string;
+  unitCode: string;
   ownerTypeId: string;
   ownerId: string;
   parentWalletId?: string;

@@ -3,21 +3,27 @@ export interface CreateBalanceTypeDTO {
   code: string;
   description?: string;
   isActive?: boolean;
-  /** UOMs this balance type may be denominated in. Omitted/empty ⇒ unrestricted. */
-  allowedUomIds?: string[];
+  /** The unit category this balance holds (CURRENCY, POINTS, TIME, DATA …). */
+  categoryId: string;
+  /**
+   * Units of that category — acc_currency ids for CURRENCY, wlt_uom ids
+   * otherwise. Omitted/empty ⇒ any unit of the category.
+   */
+  allowedUnitIds?: string[];
   requestedBy: string;
 }
 
+/** The category is fixed once created: wallets already hold units of it. */
 export interface UpdateBalanceTypeDTO {
   id: string;
   name?: string;
   description?: string;
   isActive?: boolean;
   /**
-   * Replaces the whole tag list when present (send `[]` to clear it back to
-   * unrestricted). Omit the field to leave the existing tags untouched.
+   * Replaces the whole list when present (send `[]` for any unit of the
+   * category). Omit the field to leave the existing list untouched.
    */
-  allowedUomIds?: string[];
+  allowedUnitIds?: string[];
   requestedBy: string;
 }
 
@@ -27,5 +33,6 @@ export interface BalanceTypeDTO {
   code: string;
   description?: string;
   isActive: boolean;
-  allowedUomIds: string[];
+  categoryId: string;
+  allowedUnitIds: string[];
 }

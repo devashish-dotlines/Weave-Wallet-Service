@@ -80,20 +80,6 @@ export class WalletRepo extends BaseRepo implements IWalletRepo {
     return saved.id;
   }
 
-  public async setBalance(
-    id: string,
-    balance: number,
-    requestedBy: string,
-  ): Promise<void> {
-    const existing = await this.baseModel.findOne({ where: { id } });
-    if (!existing) return;
-    await existing.update({
-      balance,
-      updatedBy: requestedBy,
-      updatedAt: DateTimeObject.create(-1).getValue().value,
-    });
-  }
-
   public async setWorkflowStatus(
     id: string,
     s: WalletStatusProjection,

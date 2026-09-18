@@ -22,6 +22,8 @@ export interface WalletTypeProps extends BaseEntityProps {
   /** Only meaningful when overdraftAllowed; the max negative available balance. */
   overdraftLimit?: number;
   allowTransfersOut: boolean;
+  /** May wallets of this type be funded by a top-up (deposit / gateway)? */
+  allowTopup: boolean;
   allowWithdrawals: boolean;
   /** Required KYC level for wallets of this type. Stored only this pass. */
   requiredKycLevel: number;
@@ -60,6 +62,9 @@ export class WalletType extends AuditableEntity<WalletTypeProps> {
   get allowTransfersOut(): boolean {
     return this.props.allowTransfersOut;
   }
+  get allowTopup(): boolean {
+    return this.props.allowTopup ?? false;
+  }
   get allowWithdrawals(): boolean {
     return this.props.allowWithdrawals;
   }
@@ -93,6 +98,9 @@ export class WalletType extends AuditableEntity<WalletTypeProps> {
   }
   set allowTransfersOut(value: boolean) {
     this.props.allowTransfersOut = value;
+  }
+  set allowTopup(value: boolean) {
+    this.props.allowTopup = value;
   }
   set allowWithdrawals(value: boolean) {
     this.props.allowWithdrawals = value;

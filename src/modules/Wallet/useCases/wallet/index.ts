@@ -2,10 +2,10 @@ import {
   walletRepo,
   walletTypeRepo,
   balanceTypeRepo,
-  uomRepo,
   ownerTypeRepo,
   usageDimensionRepo,
 } from '../../repos';
+import { unitRegistry } from '../../services';
 import { setWalletUsageRestrictionsUseCase } from '../walletUsageRestriction';
 import { creditWalletUseCase } from '../walletTransaction';
 import { ProvisionWalletUseCase } from './provisionWallet.use-case';
@@ -53,7 +53,7 @@ const createWalletUseCase = new CreateWalletUseCase(
   walletRepo,
   walletTypeRepo,
   balanceTypeRepo,
-  uomRepo,
+  unitRegistry,
   ownerTypeRepo,
   workflowInitiator,
 );
@@ -66,6 +66,7 @@ export const provisionWalletUseCase = new ProvisionWalletUseCase(
   createWalletUseCase,
   setWalletUsageRestrictionsUseCase,
   creditWalletUseCase,
+  unitRegistry,
 );
 
 const updateWalletUseCase = new UpdateWalletUseCase(walletRepo);

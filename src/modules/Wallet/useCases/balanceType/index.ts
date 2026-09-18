@@ -1,4 +1,5 @@
-import { balanceTypeRepo, uomRepo } from '../../repos';
+import { balanceTypeRepo, uomCategoryRepo } from '../../repos';
+import { unitRegistry } from '../../services';
 import {
   CreateBalanceTypeUseCase,
   UpdateBalanceTypeUseCase,
@@ -14,11 +15,12 @@ import {
 
 const createBalanceTypeUseCase = new CreateBalanceTypeUseCase(
   balanceTypeRepo,
-  uomRepo,
+  uomCategoryRepo,
+  unitRegistry,
 );
 const updateBalanceTypeUseCase = new UpdateBalanceTypeUseCase(
   balanceTypeRepo,
-  uomRepo,
+  unitRegistry,
 );
 const deleteBalanceTypeUseCase = new DeleteBalanceTypeUseCase(balanceTypeRepo);
 const listBalanceTypeUseCase = new ListBalanceTypeUseCase(balanceTypeRepo);

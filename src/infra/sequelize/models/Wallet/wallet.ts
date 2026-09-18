@@ -45,9 +45,25 @@ export class Wallet extends Model<Wallet> {
   @Column(DataType.UUID)
   walletTypeId!: string;
 
+  // LEGACY (pre unit categories). No longer written or read by the app; kept one
+  // release for the unit-category migration, then dropped.
   @ForeignKey(() => Uom)
-  @Column(DataType.UUID)
-  uomId!: string;
+  @Column({ type: DataType.UUID, allowNull: true })
+  uomId!: string | null;
+
+  // The unit the balance is held in: category + unit id. For a CURRENCY
+  // category unit_id is accounting's acc_currency.id; for a LOCAL one it is a
+  // wlt_uom id — so no FK. Immutable after creation. Nullable in the DB only so
+  // DB_SYNC can add the columns; the unit-category migration fills them.
+  @Column({ type: DataType.UUID, allowNull: true })
+  unitCategoryId!: string | null;
+
+  @Column({ type: DataType.UUID, allowNull: true })
+  unitId!: string | null;
+
+  // Denormalised unit code (BDT, POINTS, MB) for display, config keys and GL.
+  @Column({ type: DataType.STRING(32), allowNull: true })
+  unitCode!: string | null;
 
   // Owner-type lookup FK; ownerId stays an opaque string (owning service's id,
   // not a hard cross-service FK).

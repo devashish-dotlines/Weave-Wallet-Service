@@ -3,6 +3,7 @@ import {
   balanceTypeRepo,
   ownerTypeRepo,
   uomRepo,
+  uomCategoryRepo,
 } from '../../repos';
 
 /** The `service` key under which this service's OWN entities are exposed. Peers
@@ -79,6 +80,20 @@ export class LocalEntityProvider {
           })),
       },
       {
+        // CURRENCY, POINTS, TIME, DATA … — pair with a unit id of that
+        // category (acc_currency id for CURRENCY, `uom` below otherwise).
+        entity: 'uom_category',
+        displayName: 'Unit Category',
+        keyField: 'id',
+        valueField: 'name',
+        list: async () =>
+          (await uomCategoryRepo.list()).map((c) => ({
+            key: c.id.toString(),
+            value: c.name,
+          })),
+      },
+      {
+        // LOCAL units only; currencies are accounting's `currency` entity.
         entity: 'uom',
         displayName: 'Unit of Measure',
         keyField: 'id',

@@ -7,6 +7,7 @@ import {
   WalletTxType,
   WalletTxDirection,
   WalletTxState,
+  WalletTxSourceType,
 } from '../domain/walletTransaction';
 import { WalletTransactionDTO } from '../DTO/walletTransactionDTO';
 
@@ -28,6 +29,9 @@ export class WalletTransactionMap extends Mapper<WalletTransaction> {
       idempotencyKey: t.idempotencyKey ?? null,
       parentTransactionId: t.parentTransactionId ?? null,
       description: t.description ?? null,
+      sourceType: t.sourceType ?? null,
+      sourceRef: t.sourceRef ?? null,
+      glVoucherId: t.glVoucherId ?? null,
       voided: t.voided ?? false,
       createdBy: t.createdBy,
       createdAt: t.createdAt ? t.createdAt.value : 0,
@@ -55,6 +59,9 @@ export class WalletTransactionMap extends Mapper<WalletTransaction> {
         idempotencyKey: raw.idempotencyKey ?? undefined,
         parentTransactionId: raw.parentTransactionId ?? undefined,
         description: raw.description ?? undefined,
+        sourceType: (raw.sourceType ?? undefined) as WalletTxSourceType | undefined,
+        sourceRef: raw.sourceRef ?? undefined,
+        glVoucherId: raw.glVoucherId ?? undefined,
         voided: raw.voided,
         createdBy: raw.createdBy,
         createdAt: Mapper.toDateRequired(raw.createdAt, 'createdAt', 'WalletTransaction'),
@@ -87,6 +94,9 @@ export class WalletTransactionMap extends Mapper<WalletTransaction> {
       idempotencyKey: t.idempotencyKey,
       parentTransactionId: t.parentTransactionId,
       description: t.description,
+      sourceType: t.sourceType,
+      sourceRef: t.sourceRef,
+      glVoucherId: t.glVoucherId,
       createdAt: t.createdAt ? t.createdAt.value : 0,
     };
   }

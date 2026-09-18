@@ -6,7 +6,9 @@ import * as Sequelize from 'sequelize';
 import { ServerVersion } from './serverVersion';
 import { APIKey } from './apiKey';
 import { BalanceType } from './Wallet/balanceType';
-import { BalanceTypeUom } from './Wallet/balanceTypeUom';
+import { BalanceTypeUnit } from './Wallet/balanceTypeUnit';
+import { UomCategory } from './Wallet/uomCategory';
+import { UomLegacyMap } from './Wallet/uomLegacyMap';
 import { Uom } from './Wallet/uom';
 import { OwnerType } from './Wallet/ownerType';
 import { WalletType } from './Wallet/walletType';
@@ -15,6 +17,9 @@ import { WalletTransaction } from './Wallet/walletTransaction';
 import { RegisteredService } from './Wallet/registeredService';
 import { UsageDimension } from './Wallet/usageDimension';
 import { WalletUsageRestriction } from './Wallet/walletUsageRestriction';
+import { UomRate } from './Wallet/uomRate';
+import { TopupRequest } from './Wallet/topupRequest';
+import { TopupRequestAttachment } from './Wallet/topupRequestAttachment';
 
 let models: any = {};
 let modelsLoaded = false;
@@ -26,7 +31,9 @@ const createModels = () => {
   models['ServerVersion'] = ServerVersion;
   models['APIKey'] = APIKey;
   models['BalanceType'] = BalanceType;
-  models['BalanceTypeUom'] = BalanceTypeUom;
+  models['BalanceTypeUnit'] = BalanceTypeUnit;
+  models['UomCategory'] = UomCategory;
+  models['UomLegacyMap'] = UomLegacyMap;
   models['Uom'] = Uom;
   models['OwnerType'] = OwnerType;
   models['WalletType'] = WalletType;
@@ -35,6 +42,9 @@ const createModels = () => {
   models['RegisteredService'] = RegisteredService;
   models['UsageDimension'] = UsageDimension;
   models['WalletUsageRestriction'] = WalletUsageRestriction;
+  models['UomRate'] = UomRate;
+  models['TopupRequest'] = TopupRequest;
+  models['TopupRequestAttachment'] = TopupRequestAttachment;
 
   // Register new module models here, e.g.:
   // models['<ModelName>'] = <ModelName>;

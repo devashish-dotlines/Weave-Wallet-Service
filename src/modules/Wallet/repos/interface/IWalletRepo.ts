@@ -24,7 +24,5 @@ export interface IWalletRepo {
   create(domainObject: Wallet): Promise<string | null>;
   update(domainObject: Wallet): Promise<string | null>;
   setWorkflowStatus(id: string, s: WalletStatusProjection): Promise<void>;
-  /** Overwrite the cached balance (used by recompute-from-transactions). */
-  setBalance(id: string, balance: number, requestedBy: string): Promise<void>;
   delete(dto: DeleteDTO): Promise<string | null>;
 }

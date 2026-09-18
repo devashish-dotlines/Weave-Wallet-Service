@@ -64,6 +64,24 @@ export class WalletTransaction extends Model<WalletTransaction> {
   @Column({ type: DataType.STRING, allowNull: true })
   description!: string | null;
 
+  // What caused the movement: 'BANK_DEPOSIT' | 'TRANSFER' | 'ADMIN' | 'PROVISION'.
+  @Column({ type: DataType.STRING(24), allowNull: true })
+  sourceType!: string | null;
+
+  // Reference into the originating record, e.g. 'TUR:<topup code>' or a
+  // provisioning externalRef (same 191 width as wallet.external_ref).
+  @Column({ type: DataType.STRING(191), allowNull: true })
+  sourceRef!: string | null;
+
+  // Accounting voucher posted for this movement; null until posted.
+  @Column({ type: DataType.STRING(64), allowNull: true })
+  glVoucherId!: string | null;
+
+  // Last FAILED GL posting attempt (unix seconds); the reconciler waits a retry
+  // window before trying the row again, so poison rows can't starve the sweep.
+  @Column({ type: DataType.BIGINT, allowNull: true })
+  glLastAttemptAt!: number | null;
+
   @Default(false)
   @Column
   voided!: boolean;
