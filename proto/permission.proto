@@ -16,6 +16,12 @@ service PermissionService {
   // transition rules) use this to match against the realm-role NAMES carried in
   // a principal's gateway token. Unknown/voided ids are simply omitted.
   rpc ResolveRoleNames(ResolveRoleNamesRequest) returns (ResolveRoleNamesResponse);
+  // Translate a gateway principal's Keycloak subject (`sub`) -> the Accounts
+  // user_ref id and the organization that user belongs to. Callers that own
+  // resources keyed by an Accounts user or organization (e.g. Wallet ownership)
+  // use this to decide whether the caller owns them. Unknown/voided users come
+  // back with found=false.
+  rpc ResolvePrincipal(ResolvePrincipalRequest) returns (ResolvePrincipalResponse);
 }
 
 message ResolvePermissionsRequest {
@@ -37,4 +43,15 @@ message ResolveRoleNamesResponse {
 message RoleNameMapping {
   string id = 1;
   string name = 2;
+}
+
+message ResolvePrincipalRequest {
+  string keycloak_user_id = 1;
+}
+
+message ResolvePrincipalResponse {
+  bool found = 1;
+  string user_ref_id = 2;
+  string organization_id = 3;
+  bool active = 4;
 }

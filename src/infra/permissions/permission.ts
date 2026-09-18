@@ -30,3 +30,21 @@ export function requirePermission(code: string): express.RequestHandler {
     });
   };
 }
+
+/**
+ * Gates a route on holding AT LEAST ONE of `codes` — for routes shared by an
+ * owner-facing and a reviewer-facing permission, where the use case then
+ * decides what that caller may actually see.
+ */
+export function requireAnyPermission(codes: string[]): express.RequestHandler {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (codes.some((code) => hasPermission(req.user, code))) return next();
+    return res.status(403).json({
+      success: false,
+      error: {
+        code: 'PERMISSION_DENIED',
+        message: `Missing required permission: one of ${codes.join(', ')}`,
+      },
+    });
+  };
+}
